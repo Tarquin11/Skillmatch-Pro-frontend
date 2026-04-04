@@ -1,0 +1,14 @@
+<section>
+  <h2>AI Dashboard</h2>
+
+  <p *ngIf="loading">Loading...</p>
+  <p *ngIf="error">{{ error }}</p>
+
+  <div *ngIf="info">
+    <p><strong>Model loaded:</strong> {{ info.model_loaded }}</p>
+    <p><strong>Dataset version:</strong> {{ info.dataset_version || 'N/A' }}</p>
+    <p><strong>Trained at:</strong> {{ info.trained_at_utc || 'N/A' }}</p>
+    <p><strong>Canary:</strong> {{ info.canary_enabled ? 'ON' : 'OFF' }}</p>
+    <p><strong>Canary traffic:</strong> {{ info.canary_traffic_percent ?? 0 }}%</p>
+  </div>
+</section>
