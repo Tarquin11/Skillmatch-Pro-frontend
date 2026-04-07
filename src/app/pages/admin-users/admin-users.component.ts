@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { finalize } from 'rxjs';
 import { TPipe } from '../../core/i18n/t.pipe';
@@ -12,11 +12,11 @@ import { AuthApiService, CurrentUserResponse, UserRole } from '../../core/servic
   templateUrl: './admin-users.component.html',
 })
 export class AdminUsersComponent implements OnInit {
-  loading = true;
-  errorKey = '';
-  users: CurrentUserResponse[] = [];
-  currentUser: CurrentUserResponse | null = null;
-  savingUserId: number | null = null;
+  readonly loading = signal(true);
+  readonly errorKey = signal('');
+  readonly users = signal<CurrentUserResponse[]>([]);
+  readonly currentUser = signal<CurrentUserResponse | null>(null);
+  readonly savingUserId = signal<number | null>(null);
   readonly roles: UserRole[] = ['admin', 'recruiter', 'user'];
 
   constructor(
@@ -25,17 +25,17 @@ export class AdminUsersComponent implements OnInit {
   ) {}
 
   ngOnInit(): void {
-    this.loading = true;
-    this.errorKey = '';
+    this.loading.set(true);
+    this.errorKey.set('');
 
     this.auth.getMe().subscribe({
       next: (me) => {
-        this.currentUser = me;
+        this.currentUser.set(me);
         this.loadUsers();
       },
       error: () => {
-        this.errorKey = 'adminUsers.error.unauthorized';
-        this.loading = false;
+        this.errorKey.set('adminUsers.error.unauthorized');
+        this.loading.set(false);
       },
     });
   }
@@ -48,46 +48,46 @@ export class AdminUsersComponent implements OnInit {
     if (user.role === targetRole) {
       return;
     }
-    if (this.currentUser && user.id === this.currentUser.id && targetRole !== 'admin') {
-      this.errorKey = 'adminUsers.error.selfDemotion';
+    const me = this.currentUser();
+    if (me && user.id === me.id && targetRole !== 'admin') {
+      this.errorKey.set('adminUsers.error.selfDemotion');
       return;
     }
 
-    this.errorKey = '';
-    this.savingUserId = user.id;
+    this.errorKey.set('');
+    this.savingUserId.set(user.id);
     this.adminUsersApi
       .updateUserRole(user.id, targetRole)
-      .pipe(finalize(() => (this.savingUserId = null)))
+      .pipe(finalize(() => this.savingUserId.set(null)))
       .subscribe({
         next: (updated) => {
-          this.users = this.users.map((u) => (u.id === updated.id ? updated : u));
-          if (this.currentUser?.id === updated.id) {
-            this.currentUser = updated;
+          this.users.update((rows) => rows.map((u) => (u.id === updated.id ? updated : u)));
+          if (this.currentUser()?.id === updated.id) {
+            this.currentUser.set(updated);
             this.auth.loadCurrentUser();
           }
         },
         error: () => {
-          this.errorKey = 'adminUsers.error.update';
+          this.errorKey.set('adminUsers.error.update');
         },
       });
   }
 
   isSelf(user: CurrentUserResponse): boolean {
-    return this.currentUser?.id === user.id;
+    return this.currentUser()?.id === user.id;
   }
 
   private loadUsers(): void {
     this.adminUsersApi
       .listUsers()
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: (users) => {
-          this.users = users;
+          this.users.set(users);
         },
         error: () => {
-          this.errorKey = 'adminUsers.error.load';
+          this.errorKey.set('adminUsers.error.load');
         },
       });
   }
 }
-

@@ -1,0 +1,58 @@
+<article
+  class="card card-level-1 p-4 space-y-3"
+  [ngClass]="density === 'compact' ? 'table-density-compact' : 'table-density-comfortable'"
+>
+  <div *ngIf="showDensityToggle" class="flex justify-end">
+    <div class="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-gray-50 px-2 py-1">
+      <span class="text-xs font-medium text-gray-700">{{ 'ui.density.label' | t }}</span>
+      <button
+        type="button"
+        class="density-toggle-btn"
+        [class.active]="density === 'comfortable'"
+        [attr.aria-pressed]="density === 'comfortable'"
+        (click)="setDensity('comfortable')"
+      >
+        {{ 'ui.density.comfortable' | t }}
+      </button>
+      <button
+        type="button"
+        class="density-toggle-btn"
+        [class.active]="density === 'compact'"
+        [attr.aria-pressed]="density === 'compact'"
+        (click)="setDensity('compact')"
+      >
+        {{ 'ui.density.compact' | t }}
+      </button>
+    </div>
+  </div>
+
+  <ng-content select="[dataTableToolbar]"></ng-content>
+
+  <div *ngIf="loading" class="space-y-2" aria-live="polite">
+    <span class="sr-only">{{ loadingKey | t }}</span>
+    <div
+      *ngFor="let _row of skeletonRowsArray()"
+      class="grid gap-2"
+      [style.grid-template-columns]="'repeat(' + skeletonColsArray().length + ', minmax(0, 1fr))'"
+    >
+      <div
+        *ngFor="let _col of skeletonColsArray()"
+        class="h-5 rounded bg-slate-200/90 animate-pulse"
+      ></div>
+    </div>
+  </div>
+
+  <ng-container *ngIf="!loading && hasRows">
+    <ng-content select="[dataTableContent]"></ng-content>
+  </ng-container>
+
+  <app-empty-state
+    *ngIf="showEmpty && !loading && !hasRows"
+    [titleKey]="emptyTitleKey"
+    [subtitleKey]="emptySubtitleKey"
+  >
+    <ng-content select="[dataTableEmptyActions]"></ng-content>
+  </app-empty-state>
+
+  <ng-content select="[dataTableFooter]"></ng-content>
+</article>

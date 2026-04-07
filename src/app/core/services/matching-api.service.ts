@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface JobMatchRequest {
   job_title: string;
@@ -14,8 +15,15 @@ export interface MatchCandidate {
   full_name?: string;
   score?: number;
   score_percent?: number;
+  predicted_fit_score?: number;
   predicted_title?: string | null;
   predicted_experience_years?: number | null;
+  scoring_source?: string;
+  feature_breakdown?: Record<string, number>;
+  top_reasons?: string[];
+  matched_skills?: string[];
+  skill_gaps?: string[];
+  skill_gap_ratio?: number;
 }
 
 export interface JobMatchResponse {
@@ -66,7 +74,7 @@ export interface ModelInfoResponse {
 
 @Injectable({ providedIn: 'root' })
 export class MatchingApiService {
-  private readonly baseUrl = 'http://127.0.0.1:8000';
+  private readonly baseUrl = environment.apiBaseUrl;
 
   constructor(private readonly http: HttpClient) {}
 

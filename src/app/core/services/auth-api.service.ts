@@ -12,6 +12,7 @@ import {
   tap,
   throwError,
 } from 'rxjs';
+import { environment } from '../../../environments/environment';
 
 export interface LoginResponse {
   access_token: string;
@@ -36,10 +37,12 @@ export interface CurrentUserResponse {
 const ACCESS_TOKEN_KEY = 'access_token';
 const REFRESH_TOKEN_KEY = 'refresh_token';
 const ACCESS_TOKEN_EXPIRES_AT_KEY = 'access_token_expires_at';
+const AUTH_STORAGE_MODE_KEY = 'auth_storage_mode';
+type AuthStorageMode = 'local' | 'session';
 
 @Injectable({ providedIn: 'root' })
 export class AuthApiService implements OnDestroy {
-  private readonly baseUrl = 'http://127.0.0.1:8000';
+  private readonly baseUrl = environment.apiBaseUrl;
   private readonly refreshBufferSeconds = 30;
   private readonly refreshTickMs = 15000;
 
@@ -57,8 +60,9 @@ export class AuthApiService implements OnDestroy {
     this.stopSilentRefresh();
   }
 
-  login(email: string, password: string): Observable<LoginResponse> {
+  login(email: string, password: string, rememberMe = false): Observable<LoginResponse> {
     const body = new HttpParams().set('username', email).set('password', password);
+    this.setStorageMode(rememberMe ? 'local' : 'session');
 
     return this.http
       .post<LoginResponse>(`${this.baseUrl}/auth/login`, body.toString(), {
@@ -123,9 +127,7 @@ export class AuthApiService implements OnDestroy {
 
   logout(): void {
     this.stopSilentRefresh();
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
-    localStorage.removeItem(REFRESH_TOKEN_KEY);
-    localStorage.removeItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+    this.clearAuthKeys();
     this.currentUserSubject.next(null);
     this.authLoadingSubject.next(false);
   }
@@ -135,11 +137,11 @@ export class AuthApiService implements OnDestroy {
   }
 
   getAccessToken(): string | null {
-    return localStorage.getItem(ACCESS_TOKEN_KEY);
+    return this.readAuthKey(ACCESS_TOKEN_KEY);
   }
 
   getRefreshToken(): string | null {
-    return localStorage.getItem(REFRESH_TOKEN_KEY);
+    return this.readAuthKey(REFRESH_TOKEN_KEY);
   }
 
   getCurrentUserSnapshot(): CurrentUserResponse | null {
@@ -239,28 +241,30 @@ export class AuthApiService implements OnDestroy {
   }
 
   private persistTokens(res: LoginResponse): void {
+    this.clearTokenKeysOnly();
+
     if (res.access_token) {
-      localStorage.setItem(ACCESS_TOKEN_KEY, res.access_token);
+      this.writeAuthKey(ACCESS_TOKEN_KEY, res.access_token);
     }
     if (res.refresh_token) {
-      localStorage.setItem(REFRESH_TOKEN_KEY, res.refresh_token);
+      this.writeAuthKey(REFRESH_TOKEN_KEY, res.refresh_token);
     }
 
     const expiresIn = Number(res.expires_in ?? 0);
     if (Number.isFinite(expiresIn) && expiresIn > 0) {
       const expiresAt = Date.now() + expiresIn * 1000;
-      localStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, String(expiresAt));
+      this.writeAuthKey(ACCESS_TOKEN_EXPIRES_AT_KEY, String(expiresAt));
       return;
     }
 
     const fromJwt = this.decodeJwtExpiryMs(res.access_token);
     if (fromJwt !== null) {
-      localStorage.setItem(ACCESS_TOKEN_EXPIRES_AT_KEY, String(fromJwt));
+      this.writeAuthKey(ACCESS_TOKEN_EXPIRES_AT_KEY, String(fromJwt));
     }
   }
 
   private getAccessTokenExpiresAtMs(): number | null {
-    const raw = localStorage.getItem(ACCESS_TOKEN_EXPIRES_AT_KEY);
+    const raw = this.readAuthKey(ACCESS_TOKEN_EXPIRES_AT_KEY);
     if (raw) {
       const parsed = Number(raw);
       if (Number.isFinite(parsed) && parsed > 0) {
@@ -283,6 +287,112 @@ export class AuthApiService implements OnDestroy {
       const exp = Number(payload?.exp ?? 0);
       if (!Number.isFinite(exp) || exp <= 0) return null;
       return exp * 1000;
+    } catch {
+      return null;
+    }
+  }
+
+  private setStorageMode(mode: AuthStorageMode): void {
+    const local = this.localStorageRef();
+    if (!local) return;
+    try {
+      local.setItem(AUTH_STORAGE_MODE_KEY, mode);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  private getStorageMode(): AuthStorageMode {
+    const local = this.localStorageRef();
+    if (local) {
+      try {
+        const saved = local.getItem(AUTH_STORAGE_MODE_KEY);
+        if (saved === 'local' || saved === 'session') {
+          return saved;
+        }
+      } catch {
+        // Ignore storage failures.
+      }
+    }
+
+    if (this.readFrom(this.localStorageRef(), ACCESS_TOKEN_KEY)) {
+      return 'local';
+    }
+    if (this.readFrom(this.sessionStorageRef(), ACCESS_TOKEN_KEY)) {
+      return 'session';
+    }
+    return 'session';
+  }
+
+  private activeStorage(): Storage | null {
+    return this.getStorageMode() === 'local' ? this.localStorageRef() : this.sessionStorageRef();
+  }
+
+  private fallbackStorage(): Storage | null {
+    return this.getStorageMode() === 'local' ? this.sessionStorageRef() : this.localStorageRef();
+  }
+
+  private readAuthKey(key: string): string | null {
+    const primary = this.readFrom(this.activeStorage(), key);
+    if (primary !== null) return primary;
+    return this.readFrom(this.fallbackStorage(), key);
+  }
+
+  private writeAuthKey(key: string, value: string): void {
+    const storage = this.activeStorage() ?? this.localStorageRef() ?? this.sessionStorageRef();
+    if (!storage) return;
+    try {
+      storage.setItem(key, value);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  private clearTokenKeysOnly(): void {
+    this.removeFrom(this.localStorageRef(), ACCESS_TOKEN_KEY);
+    this.removeFrom(this.localStorageRef(), REFRESH_TOKEN_KEY);
+    this.removeFrom(this.localStorageRef(), ACCESS_TOKEN_EXPIRES_AT_KEY);
+    this.removeFrom(this.sessionStorageRef(), ACCESS_TOKEN_KEY);
+    this.removeFrom(this.sessionStorageRef(), REFRESH_TOKEN_KEY);
+    this.removeFrom(this.sessionStorageRef(), ACCESS_TOKEN_EXPIRES_AT_KEY);
+  }
+
+  private clearAuthKeys(): void {
+    this.clearTokenKeysOnly();
+    this.removeFrom(this.localStorageRef(), AUTH_STORAGE_MODE_KEY);
+  }
+
+  private readFrom(storage: Storage | null, key: string): string | null {
+    if (!storage) return null;
+    try {
+      return storage.getItem(key);
+    } catch {
+      return null;
+    }
+  }
+
+  private removeFrom(storage: Storage | null, key: string): void {
+    if (!storage) return;
+    try {
+      storage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  private localStorageRef(): Storage | null {
+    try {
+      if (typeof localStorage === 'undefined') return null;
+      return localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  private sessionStorageRef(): Storage | null {
+    try {
+      if (typeof sessionStorage === 'undefined') return null;
+      return sessionStorage;
     } catch {
       return null;
     }

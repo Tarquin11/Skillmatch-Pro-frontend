@@ -1,0 +1,142 @@
+<section class="space-y-6">
+  <app-page-header
+    titleKey="skills.title"
+    subtitleKey="skills.subtitle"
+  ></app-page-header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 space-y-4">
+    <h3 class="font-semibold">{{ isEditMode ? ('skills.form.edit' | t) : ('skills.form.create' | t) }}</h3>
+
+    <app-form-field
+      forId="skill-name"
+      labelKey="skills.form.name"
+      [required]="true"
+      [errorKey]="controlErrorKey('name')"
+    >
+      <input
+        id="skill-name"
+        formControlName="name"
+        class="w-full rounded-lg border px-3 py-2"
+        [ngClass]="controlInvalid('name') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+      />
+    </app-form-field>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button type="submit" class="btn-primary w-full sm:w-auto min-h-11" [disabled]="saving">
+        {{ saving ? ('common.loading' | t) : (isEditMode ? ('skills.form.update' | t) : ('skills.form.createAction' | t)) }}
+      </button>
+      <button *ngIf="isEditMode" type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="cancelEdit()">
+        {{ 'skills.form.cancel' | t }}
+      </button>
+    </div>
+  </form>
+
+  <div *ngIf="successKey" class="card p-4 border border-green-200 bg-green-50 text-green-700">{{ successKey | t }}</div>
+  <div *ngIf="errorMessage" class="card p-4 border border-red-200 bg-red-50 text-red-700" role="alert">{{ errorMessage }}</div>
+
+  <app-data-table
+    [loading]="loading"
+    [hasRows]="skills.length > 0"
+    [skeletonRows]="6"
+    [skeletonCols]="3"
+    loadingKey="skills.loading"
+    emptyTitleKey="skills.empty"
+  >
+    <div dataTableToolbar class="flex flex-wrap gap-3 items-end">
+      <div class="w-full sm:w-auto sm:min-w-[240px]">
+        <label class="block text-xs text-gray-600 mb-1">{{ 'skills.filters.search' | t }}</label>
+        <input
+          #searchBox
+          type="text"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-11"
+          [value]="search"
+          (keydown.enter)="applySearch(searchBox.value)"
+          aria-label="Search skills"
+        />
+      </div>
+      <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="applySearch(searchBox.value)">{{ 'skills.filters.apply' | t }}</button>
+      <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="applySearch(''); searchBox.value=''">
+        {{ 'skills.filters.clear' | t }}
+      </button>
+
+      <div class="w-full sm:w-auto sm:ml-auto">
+        <label class="text-sm text-gray-700">
+          {{ 'skills.pagination.pageSize' | t }}
+          <select class="ml-0 mt-1 sm:mt-0 sm:ml-2 rounded-lg border border-gray-300 px-2 py-2 min-h-11 w-full sm:w-auto" [value]="pageSize" (change)="onPageSizeChange($any($event.target).value)" aria-label="Skills page size">
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div dataTableContent class="md:hidden space-y-3">
+      <article *ngFor="let skill of skills" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs text-gray-500">ID</p>
+            <p class="text-sm font-semibold">{{ skill.id }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-500">{{ 'skills.table.name' | t }}</p>
+            <p class="text-sm font-semibold">{{ skill.name || ('common.na' | t) }}</p>
+          </div>
+        </div>
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" class="btn-secondary w-full min-h-11" (click)="startEdit(skill)">{{ 'skills.table.edit' | t }}</button>
+          <button type="button" class="btn-secondary w-full min-h-11" [disabled]="deletingId === skill.id" (click)="requestDeleteSkill(skill)">
+            {{ deletingId === skill.id ? ('common.loading' | t) : ('skills.table.delete' | t) }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <div dataTableContent class="hidden md:block overflow-x-auto">
+      <table class="min-w-full text-sm" aria-label="Skills table">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('id')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('id')">ID {{ sortIndicator('id') }}</button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('name')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('name')">
+                {{ 'skills.table.name' | t }} {{ sortIndicator('name') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'skills.table.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let skill of skills" class="border-t">
+            <td class="px-4 py-3">{{ skill.id }}</td>
+            <td class="px-4 py-3">{{ skill.name || ('common.na' | t) }}</td>
+            <td class="px-4 py-3 space-x-2">
+              <button type="button" class="btn-secondary" (click)="startEdit(skill)">{{ 'skills.table.edit' | t }}</button>
+              <button type="button" class="btn-secondary" [disabled]="deletingId === skill.id" (click)="requestDeleteSkill(skill)">
+                {{ deletingId === skill.id ? ('common.loading' | t) : ('skills.table.delete' | t) }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div dataTableFooter class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2 border-t border-gray-200">
+      <span class="text-sm text-gray-600">{{ 'skills.pagination.page' | t }} {{ currentPage }}</span>
+      <div class="grid w-full sm:w-auto grid-cols-2 gap-2">
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasPrev || loading" (click)="prevPage()">{{ 'skills.pagination.prev' | t }}</button>
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasNext || loading" (click)="nextPage()">{{ 'skills.pagination.next' | t }}</button>
+      </div>
+    </div>
+  </app-data-table>
+
+  <app-confirm-dialog
+    [open]="!!deleteTarget"
+    titleKey="ui.confirmDelete.title"
+    messageKey="ui.confirmDelete.skillMessage"
+    [danger]="true"
+    confirmLabelKey="ui.confirmDelete.confirm"
+    cancelLabelKey="ui.confirmDelete.cancel"
+    (cancel)="cancelDelete()"
+    (confirm)="confirmDeleteSkill()"
+  ></app-confirm-dialog>
+</section>

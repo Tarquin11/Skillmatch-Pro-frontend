@@ -1,26 +1,49 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { JobMatchRequest, MatchCandidate, MatchingApiService } from '../../core/services/matching-api.service';
 import { TPipe } from '../../core/i18n/t.pipe';
+import { PageHeaderComponent } from '../../core/components/ui/page-header/page-header.component';
+import { FormFieldComponent } from '../../core/components/ui/form-field/form-field.component';
+import { DataTableComponent } from '../../core/components/ui/data-table/data-table.component';
+import { EmptyStateComponent } from '../../core/components/ui/empty-state/empty-state.component';
+import { UserPreferencesService } from '../../core/services/user-preferences.service';
+import { UxTelemetryService } from '../../core/services/ux-telemetry.service';
 
 type SortKey = 'name' | 'score' | 'title' | 'experience';
 type SortDirection = 'asc' | 'desc';
 type ColumnKey = 'name' | 'score' | 'title' | 'experience';
+type ExplainabilityComponent = {
+  feature: string;
+  labelKey: string;
+  contribution: number;
+  sharePercent: number;
+  positive: boolean;
+};
+const MATCHING_PREF_KEY = 'matching_results';
 
 @Component({
   selector: 'app-matching',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, TPipe],
+  imports: [
+    CommonModule,
+    ReactiveFormsModule,
+    TPipe,
+    PageHeaderComponent,
+    FormFieldComponent,
+    DataTableComponent,
+    EmptyStateComponent,
+  ],
   templateUrl: './matching.component.html',
 })
-export class MatchingComponent {
+export class MatchingComponent implements OnDestroy {
   loading = false;
   exporting = false;
   errorKey = '';
   results: MatchCandidate[] = [];
   hasSearched = false;
   lastPayload: JobMatchRequest | null = null;
+  selectedCandidate: MatchCandidate | null = null;
 
   sortKey: SortKey = 'score';
   sortDirection: SortDirection = 'desc';
@@ -41,10 +64,13 @@ export class MatchingComponent {
   };
 
   form;
+  private hasSubmittedMatch = false;
 
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: MatchingApiService,
+    private readonly preferences: UserPreferencesService,
+    private readonly telemetry: UxTelemetryService,
   ) {
     this.form = this.fb.nonNullable.group({
       job_title: ['', Validators.required],
@@ -52,10 +78,18 @@ export class MatchingComponent {
       min_experience: [0, [Validators.required, Validators.min(0)]],
       limit: [50, [Validators.required, Validators.min(1), Validators.max(2000)]],
     });
+    this.restorePreferences();
   }
 
   submit(): void {
-    if (this.form.invalid) return;
+    if (this.form.invalid) {
+      this.telemetry.track('matching_search_invalid_form', {
+        invalid_controls: Object.entries(this.form.controls)
+          .filter(([, control]) => control.invalid)
+          .map(([name]) => name),
+      });
+      return;
+    }
 
     const rawSkills = this.form.getRawValue().required_skills;
     const requiredSkills = rawSkills
@@ -70,6 +104,13 @@ export class MatchingComponent {
       limit: Number(this.form.value.limit),
     };
 
+    this.hasSubmittedMatch = true;
+    this.telemetry.track('matching_search_used', {
+      required_skills_count: requiredSkills.length,
+      min_experience: payload.min_experience,
+      limit: payload.limit,
+    });
+
     this.lastPayload = payload;
     this.currentPage = 1;
     this.runMatch(payload);
@@ -77,7 +118,24 @@ export class MatchingComponent {
 
   retry(): void {
     if (!this.lastPayload) return;
+    this.telemetry.track('matching_retry_clicked', {
+      current_page: this.currentPage,
+      page_size: this.pageSize,
+      sort_key: this.sortKey,
+      sort_direction: this.sortDirection,
+    });
     this.runMatch(this.lastPayload);
+  }
+
+  ngOnDestroy(): void {
+    if (this.form.dirty && !this.hasSubmittedMatch) {
+      this.telemetry.track('matching_form_abandoned', {
+        job_title_touched: this.form.controls.job_title.dirty,
+        required_skills_touched: this.form.controls.required_skills.dirty,
+        min_experience_touched: this.form.controls.min_experience.dirty,
+        limit_touched: this.form.controls.limit.dirty,
+      });
+    }
   }
 
   onSort(key: SortKey): void {
@@ -87,6 +145,7 @@ export class MatchingComponent {
       this.sortKey = key;
       this.sortDirection = key === 'score' ? 'desc' : 'asc';
     }
+    this.persistSortPreference();
     this.currentPage = 1;
     if (this.lastPayload) {
       this.runMatch(this.lastPayload);
@@ -98,6 +157,11 @@ export class MatchingComponent {
     return this.sortDirection === 'asc' ? '^' : 'v';
   }
 
+  ariaSort(key: SortKey): 'none' | 'ascending' | 'descending' {
+    if (this.sortKey !== key) return 'none';
+    return this.sortDirection === 'asc' ? 'ascending' : 'descending';
+  }
+
   get showEmptyState(): boolean {
     return this.hasSearched && !this.loading && !this.errorKey && this.totalResults === 0;
   }
@@ -106,6 +170,7 @@ export class MatchingComponent {
     const parsed = Number(sizeRaw);
     if (!Number.isFinite(parsed) || parsed <= 0) return;
     this.pageSize = parsed;
+    this.persistPageSizePreference();
     this.currentPage = 1;
     if (this.lastPayload) {
       this.runMatch(this.lastPayload);
@@ -131,6 +196,7 @@ export class MatchingComponent {
       if (enabledCount <= 1) return;
     }
     this.visibleColumns[column] = !currentlyEnabled;
+    this.persistVisibleColumnsPreference();
   }
 
   isVisible(column: ColumnKey): boolean {
@@ -167,8 +233,9 @@ export class MatchingComponent {
     if (typeof raw === 'number' && Number.isFinite(raw)) {
       return raw;
     }
-    const fallback = candidate.score ?? 0;
-    return fallback * 100;
+    const fallback = candidate.score ?? candidate.predicted_fit_score ?? 0;
+    if (!Number.isFinite(fallback)) return 0;
+    return fallback <= 1 ? fallback * 100 : fallback;
   }
 
   scoreChipClass(candidate: MatchCandidate): string {
@@ -176,6 +243,83 @@ export class MatchingComponent {
     if (score >= 80) return 'bg-green-100 text-green-800 border-green-200';
     if (score >= 60) return 'bg-amber-100 text-amber-800 border-amber-200';
     return 'bg-red-100 text-red-800 border-red-200';
+  }
+
+  selectCandidate(candidate: MatchCandidate): void {
+    this.selectedCandidate = candidate;
+  }
+
+  clearSelection(): void {
+    this.selectedCandidate = null;
+  }
+
+  selectedCandidateName(): string {
+    if (!this.selectedCandidate) return '';
+    return this.selectedCandidate.full_name || `#${this.selectedCandidate.employee_id ?? 'N/A'}`;
+  }
+
+  requiredSkills(): string[] {
+    return this.lastPayload?.required_skills ?? [];
+  }
+
+  skillCoverage(candidate: MatchCandidate): { matched: number; total: number; ratio: number } {
+    const total = this.requiredSkills().length;
+    const matched = (candidate.matched_skills ?? []).length;
+    if (total <= 0) {
+      return { matched, total: 0, ratio: 1 };
+    }
+    return {
+      matched,
+      total,
+      ratio: Math.max(0, Math.min(1, matched / total)),
+    };
+  }
+
+  meetsExperience(candidate: MatchCandidate): boolean | null {
+    const minRequired = this.lastPayload?.min_experience;
+    const predicted = candidate.predicted_experience_years;
+    if (minRequired === undefined || minRequired === null) return null;
+    if (predicted === undefined || predicted === null || Number.isNaN(predicted)) return null;
+    return predicted >= minRequired;
+  }
+
+  explainabilityComponents(candidate: MatchCandidate): ExplainabilityComponent[] {
+    const breakdown = candidate.feature_breakdown ?? {};
+    const entries = Object.entries(breakdown).filter(([, value]) => Number.isFinite(value));
+    if (!entries.length) return [];
+
+    const totalAbs = entries.reduce((sum, [, value]) => sum + Math.abs(value), 0) || 1;
+    return entries
+      .sort((a, b) => Math.abs(b[1]) - Math.abs(a[1]))
+      .slice(0, 6)
+      .map(([feature, contribution]) => ({
+        feature,
+        labelKey: this.featureLabelKey(feature),
+        contribution,
+        sharePercent: Math.round((Math.abs(contribution) / totalAbs) * 100),
+        positive: contribution >= 0,
+      }));
+  }
+
+  featureLabelKey(feature: string): string {
+    switch (feature) {
+      case 'skill_overlap':
+        return 'matching.explain.feature.skill_overlap';
+      case 'experience_score':
+        return 'matching.explain.feature.experience_score';
+      case 'experience_surplus':
+        return 'matching.explain.feature.experience_surplus';
+      case 'experience_gap':
+        return 'matching.explain.feature.experience_gap';
+      case 'semantic_similarity':
+        return 'matching.explain.feature.semantic_similarity';
+      case 'performance_score':
+        return 'matching.explain.feature.performance_score';
+      case 'currently_active':
+        return 'matching.explain.feature.currently_active';
+      default:
+        return feature.replace(/_/g, ' ');
+    }
   }
 
   private runMatch(payload: JobMatchRequest): void {
@@ -194,16 +338,22 @@ export class MatchingComponent {
       .subscribe({
         next: (res) => {
           this.results = res.results ?? res.ranked ?? res.candidates ?? [];
+          if (this.selectedCandidate?.employee_id !== undefined) {
+            this.selectedCandidate =
+              this.results.find((row) => row.employee_id === this.selectedCandidate?.employee_id) ?? null;
+          }
           this.totalResults = Number(res.total_results ?? this.results.length);
           this.totalPages = Number(res.total_pages ?? 1);
           this.currentPage = Number(res.page ?? this.currentPage);
           this.pageSize = Number(res.page_size ?? this.pageSize);
+          this.persistPageSizePreference();
           this.hasNext = Boolean(res.has_next ?? false);
           this.hasPrev = Boolean(res.has_prev ?? false);
           this.loading = false;
         },
         error: () => {
           this.errorKey = 'matching.error.request';
+          this.selectedCandidate = null;
           this.totalResults = 0;
           this.totalPages = 1;
           this.hasNext = false;
@@ -211,6 +361,61 @@ export class MatchingComponent {
           this.loading = false;
         },
       });
+  }
+
+  private restorePreferences(): void {
+    const pref = this.preferences.getTablePreference<SortKey, ColumnKey>(MATCHING_PREF_KEY);
+
+    if (this.isPageSizeOption(pref.pageSize)) {
+      this.pageSize = pref.pageSize;
+    }
+
+    if (pref.sort && this.isSortKey(pref.sort.key)) {
+      this.sortKey = pref.sort.key;
+      this.sortDirection = pref.sort.direction === 'asc' ? 'asc' : 'desc';
+    }
+
+    if (pref.visibleColumns) {
+      const next: Record<ColumnKey, boolean> = { ...this.visibleColumns };
+      let enabledCount = 0;
+
+      (Object.keys(next) as ColumnKey[]).forEach((key) => {
+        const rawValue = pref.visibleColumns?.[key];
+        if (typeof rawValue === 'boolean') {
+          next[key] = rawValue;
+        }
+        if (next[key]) {
+          enabledCount += 1;
+        }
+      });
+
+      if (enabledCount > 0) {
+        this.visibleColumns = next;
+      }
+    }
+  }
+
+  private persistPageSizePreference(): void {
+    this.preferences.setTablePageSize(MATCHING_PREF_KEY, this.pageSize);
+  }
+
+  private persistSortPreference(): void {
+    this.preferences.setTableSort(MATCHING_PREF_KEY, {
+      key: this.sortKey,
+      direction: this.sortDirection,
+    });
+  }
+
+  private persistVisibleColumnsPreference(): void {
+    this.preferences.setTableVisibleColumns(MATCHING_PREF_KEY, this.visibleColumns);
+  }
+
+  private isPageSizeOption(value: number | undefined): value is number {
+    return typeof value === 'number' && this.pageSizeOptions.includes(value);
+  }
+
+  private isSortKey(value: string): value is SortKey {
+    return value === 'name' || value === 'score' || value === 'title' || value === 'experience';
   }
 
   private downloadCsv(rows: MatchCandidate[]): void {

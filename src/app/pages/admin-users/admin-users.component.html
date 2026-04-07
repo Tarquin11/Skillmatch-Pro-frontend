@@ -1,14 +1,14 @@
-<section class="space-y-6">
+<section class="space-y-6" aria-labelledby="admin-users-title">
   <div>
-    <h2 class="text-2xl font-bold gradient-text">{{ 'adminUsers.title' | t }}</h2>
+    <h2 id="admin-users-title" class="text-2xl font-bold gradient-text">{{ 'adminUsers.title' | t }}</h2>
     <p class="text-sm text-gray-600">{{ 'adminUsers.subtitle' | t }}</p>
   </div>
 
-  <div *ngIf="loading" class="card p-5">{{ 'adminUsers.loading' | t }}</div>
-  <div *ngIf="errorKey" class="card p-5 text-red-600">{{ errorKey | t }}</div>
+  <div *ngIf="loading()" class="card p-5" aria-live="polite">{{ 'adminUsers.loading' | t }}</div>
+  <div *ngIf="errorKey()" class="card p-5 text-red-600" role="alert">{{ errorKey() | t }}</div>
 
-  <div *ngIf="!loading && users.length" class="card overflow-x-auto">
-    <table class="min-w-full text-sm">
+  <div *ngIf="!loading() && users().length" class="card overflow-x-auto">
+    <table class="min-w-full text-sm" aria-label="Users table">
       <thead class="bg-gray-100">
         <tr>
           <th class="text-left px-4 py-3">{{ 'adminUsers.table.id' | t }}</th>
@@ -19,7 +19,7 @@
         </tr>
       </thead>
       <tbody>
-        <tr *ngFor="let user of users" class="border-t">
+        <tr *ngFor="let user of users()" class="border-t">
           <td class="px-4 py-3">{{ user.id }}</td>
           <td class="px-4 py-3">
             {{ user.email }}
@@ -30,18 +30,18 @@
             <select
               class="rounded-lg border border-gray-300 px-2 py-1"
               [value]="user.role"
-              [disabled]="savingUserId === user.id"
+              [disabled]="savingUserId() === user.id"
               (change)="updateRole(user, $any($event.target).value)"
+              [attr.aria-label]="'Role for ' + user.email"
             >
               <option *ngFor="let role of roles" [value]="role">{{ ('adminUsers.role.' + role) | t }}</option>
             </select>
           </td>
           <td class="px-4 py-3">
-            <span *ngIf="savingUserId === user.id" class="text-gray-500">{{ 'adminUsers.saving' | t }}</span>
+            <span *ngIf="savingUserId() === user.id" class="text-gray-500">{{ 'adminUsers.saving' | t }}</span>
           </td>
         </tr>
       </tbody>
     </table>
   </div>
 </section>
-

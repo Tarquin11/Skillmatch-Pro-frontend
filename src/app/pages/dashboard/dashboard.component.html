@@ -1,33 +1,47 @@
 <section class="space-y-6">
-  <div>
-    <h2 class="text-2xl font-bold gradient-text">{{ 'dashboard.title' | t }}</h2>
-    <p class="text-sm text-gray-600">{{ 'dashboard.subtitle' | t }}</p>
-  </div>
+  <app-page-header
+    titleKey="dashboard.title"
+    subtitleKey="dashboard.subtitle"
+  ></app-page-header>
 
-  <div *ngIf="loading" class="card p-5">{{ 'dashboard.loading' | t }}</div>
-  <div *ngIf="errorKey" class="card p-5 text-red-600">{{ errorKey | t }}</div>
-
-  <ng-container *ngIf="info">
+  <div *ngIf="loading()" class="space-y-4" aria-live="polite">
+    <span class="sr-only">{{ 'dashboard.loading' | t }}</span>
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-      <article class="card p-4">
-        <p class="text-xs text-gray-500">{{ 'dashboard.kpi.modelLoaded' | t }}</p>
+      <div *ngFor="let i of [1,2,3,4]" class="card card-level-1 p-4 space-y-2">
+        <div class="h-3 w-24 rounded bg-slate-200 animate-pulse"></div>
+        <div class="h-6 w-28 rounded bg-slate-200 animate-pulse"></div>
+      </div>
+    </div>
+    <div *ngFor="let i of [1,2,3]" class="card card-level-1 p-5 space-y-3">
+      <div class="h-4 w-36 rounded bg-slate-200 animate-pulse"></div>
+      <div class="h-4 rounded bg-slate-200 animate-pulse"></div>
+      <div class="h-4 rounded bg-slate-200 animate-pulse"></div>
+      <div class="h-4 w-3/4 rounded bg-slate-200 animate-pulse"></div>
+    </div>
+  </div>
+  <app-empty-state *ngIf="errorKey()" [titleKey]="errorKey()"></app-empty-state>
+
+  <ng-container *ngIf="info() as info">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <article class="card card-level-1 p-4">
+        <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.modelLoaded' | t }}</p>
         <p class="text-lg font-semibold mt-1">{{ (info.model_loaded ? 'common.yes' : 'common.no') | t }}</p>
       </article>
-      <article class="card p-4">
-        <p class="text-xs text-gray-500">{{ 'dashboard.kpi.artifact' | t }}</p>
+      <article class="card card-level-1 p-4">
+        <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.artifact' | t }}</p>
         <p class="text-lg font-semibold mt-1">{{ (info.artifact_exists ? 'common.yes' : 'common.no') | t }}</p>
       </article>
-      <article class="card p-4">
-        <p class="text-xs text-gray-500">{{ 'dashboard.kpi.runtime' | t }}</p>
+      <article class="card card-level-1 p-4">
+        <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.runtime' | t }}</p>
         <p class="text-lg font-semibold mt-1">{{ info.runtime_source }}</p>
       </article>
-      <article class="card p-4">
-        <p class="text-xs text-gray-500">{{ 'dashboard.kpi.lastEval' | t }}</p>
+      <article class="card card-level-1 p-4">
+        <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.lastEval' | t }}</p>
         <p class="text-sm font-semibold mt-1">{{ formatTimestamp(info.last_generalization_eval_at_utc) }}</p>
       </article>
     </div>
 
-    <article class="card p-5">
+    <article class="card card-level-2 p-5">
       <h3 class="font-semibold mb-3">{{ 'dashboard.gates.title' | t }}</h3>
       <div class="flex flex-wrap gap-2">
         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium" [ngClass]="statusBadgeClass(info.promotion_gate_passed)">
@@ -49,7 +63,7 @@
     </article>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <article class="card p-5">
+      <article class="card card-level-1 p-5">
         <h3 class="font-semibold mb-3">{{ 'dashboard.metadata' | t }}</h3>
         <p><strong>{{ 'dashboard.dataset_version' | t }}:</strong> {{ info.dataset_version || ('common.na' | t) }}</p>
         <p><strong>{{ 'dashboard.trained_at' | t }}:</strong> {{ formatTimestamp(info.trained_at_utc) }}</p>
@@ -58,7 +72,7 @@
         <p><strong>{{ 'dashboard.source' | t }}:</strong> {{ info.runtime_source }}</p>
       </article>
 
-      <article class="card-gradient p-5">
+      <article class="card card-level-2 p-5">
         <h3 class="font-semibold mb-3">{{ 'dashboard.evaluation.title' | t }}</h3>
         <p><strong>{{ 'dashboard.evaluation.promotionChecked' | t }}:</strong> {{ formatTimestamp(info.promotion_gate_checked_at_utc) }}</p>
         <p><strong>{{ 'dashboard.evaluation.generalizationEval' | t }}:</strong> {{ formatTimestamp(info.last_generalization_eval_at_utc) }}</p>
@@ -67,7 +81,7 @@
       </article>
     </div>
 
-    <article class="card p-5">
+    <article class="card card-level-3 p-5">
       <h3 class="font-semibold mb-3">{{ 'dashboard.metrics.title' | t }}</h3>
       <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
         <div>
@@ -94,4 +108,3 @@
     </article>
   </ng-container>
 </section>
-

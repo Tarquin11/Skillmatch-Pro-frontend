@@ -1,0 +1,15 @@
+<section class="toast-container">
+  <article
+    *ngFor="let toast of toasts()"
+    class="toast-card"
+    [ngClass]="levelClass(toast.level)"
+    role="status"
+    aria-live="polite"
+  >
+    <div class="toast-head">
+      <strong>{{ toast.i18nKey | t }}</strong>
+      <button type="button" class="toast-close" (click)="dismiss(toast.id)" aria-label="Dismiss notification">x</button>
+    </div>
+    <p *ngIf="toast.detail" class="toast-detail">{{ toast.detail }}</p>
+  </article>
+</section>

@@ -6,11 +6,12 @@ import { AuthApiService } from './core/services/auth-api.service';
 import { TPipe } from './core/i18n/t.pipe';
 import { I18nService } from './core/i18n/i18n.service';
 import { LanguageCode } from './core/i18n/translations';
+import { ToastContainerComponent } from './core/components/toast-container/toast-container.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, TPipe],
+  imports: [CommonModule, RouterOutlet, RouterLink, RouterLinkActive, TPipe, ToastContainerComponent],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })

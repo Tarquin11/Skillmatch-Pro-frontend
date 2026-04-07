@@ -1,0 +1,244 @@
+<section class="space-y-6">
+  <app-page-header
+    titleKey="employees.title"
+    subtitleKey="employees.subtitle"
+  ></app-page-header>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 space-y-4">
+    <h3 class="font-semibold">{{ isEditMode ? ('employees.form.edit' | t) : ('employees.form.create' | t) }}</h3>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <app-form-field
+        forId="employee-number"
+        labelKey="employees.form.employeeNumber"
+        [required]="true"
+        [errorKey]="controlErrorKey('employeeNumber')"
+      >
+        <input
+          id="employee-number"
+          formControlName="employeeNumber"
+          class="w-full rounded-lg border px-3 py-2"
+          [readonly]="isEditMode"
+          [ngClass]="controlInvalid('employeeNumber') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+        />
+      </app-form-field>
+
+      <app-form-field
+        forId="employee-email"
+        labelKey="employees.form.email"
+        [required]="true"
+        [errorKey]="controlErrorKey('email')"
+      >
+        <input
+          id="employee-email"
+          formControlName="email"
+          class="w-full rounded-lg border px-3 py-2"
+          [ngClass]="controlInvalid('email') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+        />
+      </app-form-field>
+
+      <app-form-field
+        forId="employee-first-name"
+        labelKey="employees.form.firstName"
+        [required]="true"
+        [errorKey]="controlErrorKey('first_name')"
+      >
+        <input
+          id="employee-first-name"
+          formControlName="first_name"
+          class="w-full rounded-lg border px-3 py-2"
+          [ngClass]="controlInvalid('first_name') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+        />
+      </app-form-field>
+
+      <app-form-field
+        forId="employee-last-name"
+        labelKey="employees.form.lastName"
+        [required]="true"
+        [errorKey]="controlErrorKey('last_name')"
+      >
+        <input
+          id="employee-last-name"
+          formControlName="last_name"
+          class="w-full rounded-lg border px-3 py-2"
+          [ngClass]="controlInvalid('last_name') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+        />
+      </app-form-field>
+
+      <app-form-field forId="employee-department" labelKey="employees.form.department">
+        <input id="employee-department" formControlName="department" class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </app-form-field>
+
+      <app-form-field forId="employee-position" labelKey="employees.form.position">
+        <input id="employee-position" formControlName="position" class="w-full rounded-lg border border-gray-300 px-3 py-2" />
+      </app-form-field>
+    </div>
+
+    <div class="flex flex-col sm:flex-row gap-3">
+      <button type="submit" class="btn-primary w-full sm:w-auto min-h-11" [disabled]="saving">
+        {{ saving ? ('common.loading' | t) : (isEditMode ? ('employees.form.update' | t) : ('employees.form.createAction' | t)) }}
+      </button>
+      <button *ngIf="isEditMode" type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="cancelEdit()">
+        {{ 'employees.form.cancel' | t }}
+      </button>
+    </div>
+  </form>
+
+  <div *ngIf="successKey" class="card p-4 border border-green-200 bg-green-50 text-green-700">{{ successKey | t }}</div>
+  <div *ngIf="errorMessage" class="card p-4 border border-red-200 bg-red-50 text-red-700" role="alert">{{ errorMessage }}</div>
+
+  <app-data-table
+    [loading]="loading"
+    [hasRows]="employees.length > 0"
+    [skeletonRows]="6"
+    [skeletonCols]="7"
+    loadingKey="employees.loading"
+    emptyTitleKey="employees.empty"
+  >
+    <div dataTableToolbar class="flex flex-wrap gap-3 items-end">
+      <div class="w-full sm:w-auto sm:min-w-[240px]">
+        <label class="block text-xs text-gray-600 mb-1">{{ 'employees.filters.search' | t }}</label>
+        <input
+          #searchBox
+          type="text"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-11"
+          [value]="search"
+          (keydown.enter)="applySearch(searchBox.value)"
+          aria-label="Search employees"
+        />
+      </div>
+      <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="applySearch(searchBox.value)">{{ 'employees.filters.apply' | t }}</button>
+      <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="applySearch(''); searchBox.value=''; setDepartmentFilter('')">
+        {{ 'employees.filters.clear' | t }}
+      </button>
+
+      <div class="w-full sm:w-auto sm:ml-auto">
+        <label class="text-sm text-gray-700">
+          {{ 'employees.pagination.pageSize' | t }}
+          <select class="ml-0 mt-1 sm:mt-0 sm:ml-2 rounded-lg border border-gray-300 px-2 py-2 min-h-11 w-full sm:w-auto" [value]="pageSize" (change)="onPageSizeChange($any($event.target).value)" aria-label="Employee page size">
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div dataTableToolbar class="flex flex-wrap items-center gap-2">
+      <span class="text-xs text-gray-500">{{ 'employees.filters.departmentQuick' | t }}:</span>
+      <button
+        type="button"
+        class="rounded-full border px-4 py-2 min-h-10 text-xs"
+        [ngClass]="departmentFilter === '' ? 'bg-primary-100 border-primary-300 text-primary-800' : 'bg-white border-gray-300 text-gray-700'"
+        (click)="setDepartmentFilter('')"
+      >
+        {{ 'employees.filters.all' | t }}
+      </button>
+      <button
+        *ngFor="let dep of departmentChips()"
+        type="button"
+        class="rounded-full border px-4 py-2 min-h-10 text-xs"
+        [ngClass]="departmentFilter === dep ? 'bg-primary-100 border-primary-300 text-primary-800' : 'bg-white border-gray-300 text-gray-700'"
+        (click)="setDepartmentFilter(dep)"
+      >
+        {{ dep }}
+      </button>
+    </div>
+
+    <div dataTableContent class="md:hidden space-y-3">
+      <article *ngFor="let e of employees" class="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="text-xs text-gray-500">ID</p>
+            <p class="text-sm font-semibold">{{ e.id }}</p>
+          </div>
+          <div class="text-right">
+            <p class="text-xs text-gray-500">{{ 'employees.table.employeeNumber' | t }}</p>
+            <p class="text-sm font-semibold">{{ e.employee_number || ('common.na' | t) }}</p>
+          </div>
+        </div>
+
+        <div class="mt-3 grid grid-cols-1 gap-2 text-sm">
+          <p><span class="text-gray-500">{{ 'employees.table.name' | t }}:</span> {{ (e.first_name || '') + ' ' + (e.last_name || '') }}</p>
+          <p><span class="text-gray-500">{{ 'employees.table.email' | t }}:</span> {{ e.email || ('common.na' | t) }}</p>
+          <p><span class="text-gray-500">{{ 'employees.table.department' | t }}:</span> {{ e.department || ('common.na' | t) }}</p>
+          <p><span class="text-gray-500">{{ 'employees.table.position' | t }}:</span> {{ e.position || ('common.na' | t) }}</p>
+        </div>
+
+        <div class="mt-4 grid grid-cols-2 gap-2">
+          <button type="button" class="btn-secondary w-full min-h-11" (click)="startEdit(e)">{{ 'employees.table.edit' | t }}</button>
+          <button type="button" class="btn-secondary w-full min-h-11" [disabled]="deletingId === e.id" (click)="requestDeleteEmployee(e)">
+            {{ deletingId === e.id ? ('common.loading' | t) : ('employees.table.delete' | t) }}
+          </button>
+        </div>
+      </article>
+    </div>
+
+    <div dataTableContent class="hidden md:block overflow-x-auto">
+      <table class="min-w-full text-sm" aria-label="Employees table">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('id')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('id')">ID {{ sortIndicator('id') }}</button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'employees.table.employeeNumber' | t }}</th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('last_name')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('last_name')">
+                {{ 'employees.table.name' | t }} {{ sortIndicator('last_name') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('email')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('email')">
+                {{ 'employees.table.email' | t }} {{ sortIndicator('email') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('department')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('department')">
+                {{ 'employees.table.department' | t }} {{ sortIndicator('department') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('position')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('position')">
+                {{ 'employees.table.position' | t }} {{ sortIndicator('position') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'employees.table.actions' | t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let e of employees" class="border-t">
+            <td class="px-4 py-3">{{ e.id }}</td>
+            <td class="px-4 py-3">{{ e.employee_number || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ (e.first_name || '') + ' ' + (e.last_name || '') }}</td>
+            <td class="px-4 py-3">{{ e.email || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ e.department || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ e.position || ('common.na' | t) }}</td>
+            <td class="px-4 py-3 space-x-2">
+              <button type="button" class="btn-secondary" (click)="startEdit(e)">{{ 'employees.table.edit' | t }}</button>
+              <button type="button" class="btn-secondary" [disabled]="deletingId === e.id" (click)="requestDeleteEmployee(e)">
+                {{ deletingId === e.id ? ('common.loading' | t) : ('employees.table.delete' | t) }}
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div dataTableFooter class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2 border-t border-gray-200">
+      <span class="text-sm text-gray-600">{{ 'employees.pagination.page' | t }} {{ currentPage }}</span>
+      <div class="grid w-full sm:w-auto grid-cols-2 gap-2">
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasPrev || loading" (click)="prevPage()">{{ 'employees.pagination.prev' | t }}</button>
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasNext || loading" (click)="nextPage()">{{ 'employees.pagination.next' | t }}</button>
+      </div>
+    </div>
+  </app-data-table>
+
+  <app-confirm-dialog
+    [open]="!!deleteTarget"
+    titleKey="ui.confirmDelete.title"
+    messageKey="ui.confirmDelete.employeeMessage"
+    [danger]="true"
+    confirmLabelKey="ui.confirmDelete.confirm"
+    cancelLabelKey="ui.confirmDelete.cancel"
+    (cancel)="cancelDelete()"
+    (confirm)="confirmDeleteEmployee()"
+  ></app-confirm-dialog>
+</section>

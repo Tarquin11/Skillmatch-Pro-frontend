@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { TPipe } from '../../core/i18n/t.pipe';
@@ -7,14 +7,26 @@ import {
   CandidateUploadResponse,
   CandidatesApiService,
 } from '../../core/services/candidates-api.service';
+import { PageHeaderComponent } from '../../core/components/ui/page-header/page-header.component';
+import { FormFieldComponent } from '../../core/components/ui/form-field/form-field.component';
+import { DataTableComponent } from '../../core/components/ui/data-table/data-table.component';
+import { EmptyStateComponent } from '../../core/components/ui/empty-state/empty-state.component';
+import { UxTelemetryService } from '../../core/services/ux-telemetry.service';
 
 @Component({
   selector: 'app-cv-upload',
   standalone: true,
-  imports: [CommonModule, TPipe],
+  imports: [
+    CommonModule,
+    TPipe,
+    PageHeaderComponent,
+    FormFieldComponent,
+    DataTableComponent,
+    EmptyStateComponent,
+  ],
   templateUrl: './cv-upload.component.html',
 })
-export class CvUploadComponent {
+export class CvUploadComponent implements OnDestroy {
   readonly maxFileSizeMb = 10;
   readonly allowedExtensions = ['pdf', 'docx'];
   private readonly allowedMimeTypes = new Set([
@@ -31,7 +43,10 @@ export class CvUploadComponent {
   requestErrorMessage = '';
   result: CandidateUploadResponse | null = null;
 
-  constructor(private readonly api: CandidatesApiService) {}
+  constructor(
+    private readonly api: CandidatesApiService,
+    private readonly telemetry: UxTelemetryService,
+  ) {}
 
   onFileChange(event: Event): void {
     const target = event.target as HTMLInputElement | null;
@@ -67,7 +82,20 @@ export class CvUploadComponent {
     if (!this.lastAttemptedFile || this.uploading) {
       return;
     }
+    this.telemetry.track('cv_upload_retry_clicked', {
+      file_extension: this.fileExtension(this.lastAttemptedFile.name),
+      file_size_kb: Math.round(this.lastAttemptedFile.size / 1024),
+    });
     this.upload(this.lastAttemptedFile);
+  }
+
+  ngOnDestroy(): void {
+    if (this.selectedFile && !this.uploading && !this.result) {
+      this.telemetry.track('cv_upload_form_abandoned', {
+        file_extension: this.fileExtension(this.selectedFile.name),
+        file_size_kb: Math.round(this.selectedFile.size / 1024),
+      });
+    }
   }
 
   confidenceLabel(item: CandidateSkillExtraction): string {
@@ -102,6 +130,10 @@ export class CvUploadComponent {
       error: (err: unknown) => {
         this.uploading = false;
         this.uploadProgress = 0;
+        this.telemetry.track('cv_upload_failed', {
+          file_extension: this.fileExtension(file.name),
+          file_size_kb: Math.round(file.size / 1024),
+        });
         this.requestErrorMessage = this.extractErrorMessage(err);
       },
     });
@@ -140,5 +172,10 @@ export class CvUploadComponent {
       return backendMessage;
     }
     return 'Upload failed. Please retry.';
+  }
+
+  private fileExtension(name: string): string {
+    const ext = name.split('.').pop()?.toLowerCase();
+    return ext ?? '';
   }
 }

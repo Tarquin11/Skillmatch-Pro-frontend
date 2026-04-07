@@ -1,32 +1,34 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { MatchingApiService, ModelInfoResponse } from '../../core/services/matching-api.service';
 import { TPipe } from '../../core/i18n/t.pipe';
+import { PageHeaderComponent } from '../../core/components/ui/page-header/page-header.component';
+import { EmptyStateComponent } from '../../core/components/ui/empty-state/empty-state.component';
 
 type TriState = boolean | null | undefined;
 
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, TPipe],
+  imports: [CommonModule, TPipe, PageHeaderComponent, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
 })
 export class DashboardComponent implements OnInit {
-  loading = true;
-  errorKey = '';
-  info: ModelInfoResponse | null = null;
+  readonly loading = signal(true);
+  readonly errorKey = signal('');
+  readonly info = signal<ModelInfoResponse | null>(null);
 
   constructor(private readonly api: MatchingApiService) {}
 
   ngOnInit(): void {
     this.api.getModelInfo().subscribe({
       next: (res) => {
-        this.info = res;
-        this.loading = false;
+        this.info.set(res);
+        this.loading.set(false);
       },
       error: () => {
-        this.errorKey = 'dashboard.error.load';
-        this.loading = false;
+        this.errorKey.set('dashboard.error.load');
+        this.loading.set(false);
       },
     });
   }
@@ -51,7 +53,7 @@ export class DashboardComponent implements OnInit {
   }
 
   metricValue(key: string): string {
-    const raw = this.info?.metrics?.[key];
+    const raw = this.info()?.metrics?.[key];
     if (raw === undefined || raw === null || Number.isNaN(raw)) return 'N/A';
     return raw.toFixed(3);
   }

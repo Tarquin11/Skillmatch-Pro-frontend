@@ -1,0 +1,16 @@
+<div class="space-y-1.5">
+  <label *ngIf="labelKey || label" [for]="forId || null" class="block text-sm font-medium text-gray-700">
+    {{ labelKey ? (labelKey | t) : label }}
+    <span *ngIf="required" class="text-red-600" aria-hidden="true">*</span>
+  </label>
+
+  <ng-content></ng-content>
+
+  <p *ngIf="errorKey || error" class="text-xs text-red-600">
+    {{ errorKey ? (errorKey | t) : error }}
+  </p>
+  <p *ngIf="!(errorKey || error) && (hintKey || hint)" class="text-xs text-gray-500">
+    {{ hintKey ? (hintKey | t) : hint }}
+  </p>
+</div>
+

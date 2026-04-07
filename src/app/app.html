@@ -1,12 +1,16 @@
 <div class="layout">
+  <a class="skip-link" href="#main-content">{{ 'app.skipToContent' | t }}</a>
+  <app-toast-container></app-toast-container>
+
   <header class="topbar">
     <h1>{{ 'app.title' | t }}</h1>
-    <nav>
+    <nav aria-label="Main navigation">
       <button
         type="button"
         class="lang-btn"
         [class.active]="currentLanguage() === 'fr'"
         (click)="setLanguage('fr')"
+        aria-label="Switch language to French"
       >
         FR
       </button>
@@ -15,6 +19,7 @@
         class="lang-btn"
         [class.active]="currentLanguage() === 'en'"
         (click)="setLanguage('en')"
+        aria-label="Switch language to English"
       >
         EN
       </button>
@@ -22,14 +27,17 @@
       <a *ngIf="isAuthenticated()" routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | t }}</a>
       <a *ngIf="isAuthenticated()" routerLink="/matching" routerLinkActive="active">{{ 'nav.matching' | t }}</a>
       <a *ngIf="isAuthenticated()" routerLink="/cv-upload" routerLinkActive="active">{{ 'nav.cvUpload' | t }}</a>
+      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/employees" routerLinkActive="active">{{ 'nav.employees' | t }}</a>
+      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/jobs" routerLinkActive="active">{{ 'nav.jobs' | t }}</a>
+      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/skills" routerLinkActive="active">{{ 'nav.skills' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/users" routerLinkActive="active">{{ 'nav.adminUsers' | t }}</a>
       <a *ngIf="!isAuthenticated()" routerLink="/login" routerLinkActive="active">{{ 'nav.login' | t }}</a>
       <button *ngIf="isAuthenticated()" class="logout-btn" type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>
     </nav>
   </header>
 
-  <main class="content">
-    <div *ngIf="authLoading$ | async" class="route-loading">
+  <main class="content" id="main-content" tabindex="-1">
+    <div *ngIf="authLoading$ | async" class="route-loading" aria-live="polite">
       {{ 'common.loading' | t }}
     </div>
     <router-outlet></router-outlet>

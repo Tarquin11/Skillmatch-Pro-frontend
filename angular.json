@@ -31,6 +31,15 @@
           },
           "configurations": {
             "production": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.production.ts"
+                }
+              ],
+              "optimization": true,
+              "extractLicenses": true,
+              "sourceMap": false,
               "budgets": [
                 {
                   "type": "initial",
@@ -45,7 +54,25 @@
               ],
               "outputHashing": "all"
             },
+            "staging": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.staging.ts"
+                }
+              ],
+              "optimization": true,
+              "extractLicenses": true,
+              "sourceMap": true,
+              "outputHashing": "all"
+            },
             "development": {
+              "fileReplacements": [
+                {
+                  "replace": "src/environments/environment.ts",
+                  "with": "src/environments/environment.development.ts"
+                }
+              ],
               "optimization": false,
               "extractLicenses": false,
               "sourceMap": true
@@ -58,6 +85,9 @@
           "configurations": {
             "production": {
               "buildTarget": "skillmatch-pro-front:build:production"
+            },
+            "staging": {
+              "buildTarget": "skillmatch-pro-front:build:staging"
             },
             "development": {
               "buildTarget": "skillmatch-pro-front:build:development"
