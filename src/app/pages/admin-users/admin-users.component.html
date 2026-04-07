@@ -1,0 +1,47 @@
+<section class="space-y-6">
+  <div>
+    <h2 class="text-2xl font-bold gradient-text">{{ 'adminUsers.title' | t }}</h2>
+    <p class="text-sm text-gray-600">{{ 'adminUsers.subtitle' | t }}</p>
+  </div>
+
+  <div *ngIf="loading" class="card p-5">{{ 'adminUsers.loading' | t }}</div>
+  <div *ngIf="errorKey" class="card p-5 text-red-600">{{ errorKey | t }}</div>
+
+  <div *ngIf="!loading && users.length" class="card overflow-x-auto">
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th class="text-left px-4 py-3">{{ 'adminUsers.table.id' | t }}</th>
+          <th class="text-left px-4 py-3">{{ 'adminUsers.table.email' | t }}</th>
+          <th class="text-left px-4 py-3">{{ 'adminUsers.table.active' | t }}</th>
+          <th class="text-left px-4 py-3">{{ 'adminUsers.table.role' | t }}</th>
+          <th class="text-left px-4 py-3">{{ 'adminUsers.table.action' | t }}</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let user of users" class="border-t">
+          <td class="px-4 py-3">{{ user.id }}</td>
+          <td class="px-4 py-3">
+            {{ user.email }}
+            <span *ngIf="isSelf(user)" class="ml-2 text-xs text-gray-500">({{ 'adminUsers.me' | t }})</span>
+          </td>
+          <td class="px-4 py-3">{{ (user.is_active ? 'common.yes' : 'common.no') | t }}</td>
+          <td class="px-4 py-3">
+            <select
+              class="rounded-lg border border-gray-300 px-2 py-1"
+              [value]="user.role"
+              [disabled]="savingUserId === user.id"
+              (change)="updateRole(user, $any($event.target).value)"
+            >
+              <option *ngFor="let role of roles" [value]="role">{{ ('adminUsers.role.' + role) | t }}</option>
+            </select>
+          </td>
+          <td class="px-4 py-3">
+            <span *ngIf="savingUserId === user.id" class="text-gray-500">{{ 'adminUsers.saving' | t }}</span>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+

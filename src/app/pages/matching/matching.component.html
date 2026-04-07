@@ -1,0 +1,162 @@
+<section class="space-y-6">
+  <div>
+    <h2 class="text-2xl font-bold gradient-text">{{ 'matching.title' | t }}</h2>
+    <p class="text-sm text-gray-600">{{ 'matching.subtitle' | t }}</p>
+  </div>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 space-y-4">
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">{{ 'matching.job_title' | t }}</label>
+      <input
+        formControlName="job_title"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+      />
+    </div>
+
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">{{ 'matching.required_skills' | t }}</label>
+      <input
+        formControlName="required_skills"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+      />
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ 'matching.min_experience' | t }}</label>
+        <input
+          type="number"
+          formControlName="min_experience"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ 'matching.limit' | t }}</label>
+        <input
+          type="number"
+          formControlName="limit"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+        />
+      </div>
+    </div>
+
+    <button type="submit" [disabled]="loading || form.invalid" class="btn-primary">
+      {{ loading ? ('matching.running' | t) : ('matching.run' | t) }}
+    </button>
+  </form>
+
+  <div *ngIf="errorKey" class="card p-5 border border-red-200 bg-red-50">
+    <p class="text-red-700 mb-3">{{ errorKey | t }}</p>
+    <button type="button" class="btn-secondary" [disabled]="loading || !lastPayload" (click)="retry()">
+      {{ 'matching.retry' | t }}
+    </button>
+  </div>
+
+  <div *ngIf="showEmptyState" class="card p-5 border border-amber-200 bg-amber-50">
+    <h3 class="font-semibold text-amber-900 mb-2">{{ 'matching.empty.title' | t }}</h3>
+    <p class="text-amber-800 mb-2">{{ 'matching.empty.subtitle' | t }}</p>
+    <ul class="text-sm text-amber-900 list-disc pl-5 space-y-1">
+      <li>{{ 'matching.empty.hint.skills' | t }}</li>
+      <li>{{ 'matching.empty.hint.experience' | t }}</li>
+      <li>{{ 'matching.empty.hint.limit' | t }}</li>
+    </ul>
+  </div>
+
+  <div *ngIf="results.length" class="card overflow-x-auto">
+    <div class="flex flex-wrap items-center justify-between gap-3 p-4 border-b border-gray-200">
+      <div class="text-sm text-gray-600">
+        {{ 'matching.pagination.summary' | t }}: {{ totalResults }}
+      </div>
+      <div class="flex flex-wrap items-center gap-3">
+        <label class="text-sm text-gray-700">
+          {{ 'matching.pagination.pageSize' | t }}
+          <select
+            class="ml-2 rounded-lg border border-gray-300 px-2 py-1"
+            [value]="pageSize"
+            (change)="onPageSizeChange($any($event.target).value)"
+          >
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </label>
+        <button type="button" class="btn-secondary" [disabled]="totalResults === 0 || exporting" (click)="exportCsv()">
+          {{ exporting ? ('common.loading' | t) : ('matching.exportCsv' | t) }}
+        </button>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-4 px-4 py-3 border-b border-gray-100 bg-gray-50 text-sm">
+      <span class="text-gray-700 font-medium">{{ 'matching.columns.title' | t }}:</span>
+      <label class="inline-flex items-center gap-1">
+        <input type="checkbox" [checked]="isVisible('name')" (change)="toggleColumn('name')" />
+        <span>{{ 'matching.columns.name' | t }}</span>
+      </label>
+      <label class="inline-flex items-center gap-1">
+        <input type="checkbox" [checked]="isVisible('score')" (change)="toggleColumn('score')" />
+        <span>{{ 'matching.columns.score' | t }}</span>
+      </label>
+      <label class="inline-flex items-center gap-1">
+        <input type="checkbox" [checked]="isVisible('title')" (change)="toggleColumn('title')" />
+        <span>{{ 'matching.columns.titleCol' | t }}</span>
+      </label>
+      <label class="inline-flex items-center gap-1">
+        <input type="checkbox" [checked]="isVisible('experience')" (change)="toggleColumn('experience')" />
+        <span>{{ 'matching.columns.experience' | t }}</span>
+      </label>
+    </div>
+
+    <table class="min-w-full text-sm">
+      <thead class="bg-gray-100">
+        <tr>
+          <th *ngIf="isVisible('name')" class="text-left px-4 py-3">
+            <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('name')">
+              {{ 'matching.table.name' | t }} {{ sortIndicator('name') }}
+            </button>
+          </th>
+          <th *ngIf="isVisible('score')" class="text-left px-4 py-3">
+            <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('score')">
+              {{ 'matching.table.score' | t }} {{ sortIndicator('score') }}
+            </button>
+          </th>
+          <th *ngIf="isVisible('title')" class="text-left px-4 py-3">
+            <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('title')">
+              {{ 'matching.table.predicted_title' | t }} {{ sortIndicator('title') }}
+            </button>
+          </th>
+          <th *ngIf="isVisible('experience')" class="text-left px-4 py-3">
+            <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('experience')">
+              {{ 'matching.table.experience' | t }} {{ sortIndicator('experience') }}
+            </button>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let c of results" class="border-t">
+          <td *ngIf="isVisible('name')" class="px-4 py-3">{{ c.full_name || c.employee_id }}</td>
+          <td *ngIf="isVisible('score')" class="px-4 py-3">
+            <span class="inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-semibold" [ngClass]="scoreChipClass(c)">
+              {{ scorePercent(c) | number: '1.0-2' }}%
+            </span>
+          </td>
+          <td *ngIf="isVisible('title')" class="px-4 py-3">{{ c.predicted_title || ('common.na' | t) }}</td>
+          <td *ngIf="isVisible('experience')" class="px-4 py-3">{{ c.predicted_experience_years ?? ('common.na' | t) }}</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="flex items-center justify-between px-4 py-3 border-t border-gray-200">
+      <p class="text-sm text-gray-600">
+        {{ 'matching.pagination.page' | t }} {{ currentPage }} / {{ totalPages }}
+      </p>
+      <div class="flex items-center gap-2">
+        <button type="button" class="btn-secondary" [disabled]="!hasPrev || loading" (click)="prevPage()">
+          {{ 'matching.pagination.prev' | t }}
+        </button>
+        <button type="button" class="btn-secondary" [disabled]="!hasNext || loading" (click)="nextPage()">
+          {{ 'matching.pagination.next' | t }}
+        </button>
+      </div>
+    </div>
+  </div>
+</section>
+
