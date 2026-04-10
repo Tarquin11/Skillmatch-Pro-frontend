@@ -1,6 +1,7 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
+import { HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
+import { finalize } from 'rxjs';
 import { TPipe } from '../../core/i18n/t.pipe';
 import {
   CandidateSkillExtraction,
@@ -46,6 +47,7 @@ export class CvUploadComponent implements OnDestroy {
   constructor(
     private readonly api: CandidatesApiService,
     private readonly telemetry: UxTelemetryService,
+    private readonly cdr: ChangeDetectorRef,
   ) {}
 
   onFileChange(event: Event): void {
@@ -104,6 +106,57 @@ export class CvUploadComponent implements OnDestroy {
     return `${(value * 100).toFixed(1)}%`;
   }
 
+  confidenceNormalizedLabel(item: CandidateSkillExtraction): string {
+    const value = Number(item.confidence_normalized ?? 0);
+    if (!Number.isFinite(value)) return '0%';
+    return `${(value * 100).toFixed(1)}%`;
+  }
+
+  sourceLabelKey(item: CandidateSkillExtraction): string {
+    const label = (item.source_label ?? '').trim().toLowerCase();
+    if (label) return `cvUpload.result.sourceLabel.${label}`;
+
+    const source = (item.source ?? '').toLowerCase();
+    if (source.startsWith('exact') || source.startsWith('fuzzy') || source.startsWith('synonym')) {
+      return 'cvUpload.result.sourceLabel.exact';
+    }
+    if (source.startsWith('cv_section:')) return 'cvUpload.result.sourceLabel.section';
+    if (source.startsWith('ner_span:')) return 'cvUpload.result.sourceLabel.ner';
+    if (source.startsWith('semantic_augment')) return 'cvUpload.result.sourceLabel.augment';
+    if (source.startsWith('semantic:')) return 'cvUpload.result.sourceLabel.semantic';
+    if (source.startsWith('sentence_')) return 'cvUpload.result.sourceLabel.sentence';
+    if (source.startsWith('softskill')) return 'cvUpload.result.sourceLabel.softskill';
+    if (source.startsWith('legacy')) return 'cvUpload.result.sourceLabel.legacy';
+    return 'cvUpload.result.sourceLabel.other';
+  }
+
+  confidenceBandLabelKey(item: CandidateSkillExtraction): string {
+    const band = this.resolveConfidenceBand(item);
+    return `cvUpload.result.band.${band}`;
+  }
+
+  confidenceBandClasses(item: CandidateSkillExtraction): string {
+    const band = this.resolveConfidenceBand(item);
+    if (band === 'high') {
+      return 'bg-green-100 text-green-800 border-green-200';
+    }
+    if (band === 'medium') {
+      return 'bg-amber-100 text-amber-900 border-amber-200';
+    }
+    return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+
+  private resolveConfidenceBand(item: CandidateSkillExtraction): 'low' | 'medium' | 'high' {
+    const explicit = (item.confidence_band ?? '').toLowerCase();
+    if (explicit === 'high' || explicit === 'medium' || explicit === 'low') {
+      return explicit;
+    }
+    const confidence = Number(item.confidence ?? 0);
+    if (confidence >= 0.78) return 'high';
+    if (confidence >= 0.64) return 'medium';
+    return 'low';
+  }
+
   private upload(file: File): void {
     this.uploading = true;
     this.uploadProgress = 0;
@@ -111,32 +164,34 @@ export class CvUploadComponent implements OnDestroy {
     this.requestErrorMessage = '';
     this.lastAttemptedFile = file;
 
-    this.api.uploadCv(file).subscribe({
-      next: (event) => {
-        if (event.type === HttpEventType.UploadProgress) {
-          const total = event.total ?? file.size;
-          if (total > 0) {
-            this.uploadProgress = Math.min(100, Math.round((event.loaded / total) * 100));
-          }
-          return;
-        }
-
-        if (event.type === HttpEventType.Response) {
-          this.uploadProgress = 100;
-          this.result = event.body ?? null;
+    this.api
+      .uploadCv(file)
+      .pipe(
+        finalize(() => {
           this.uploading = false;
-        }
-      },
-      error: (err: unknown) => {
-        this.uploading = false;
-        this.uploadProgress = 0;
-        this.telemetry.track('cv_upload_failed', {
-          file_extension: this.fileExtension(file.name),
-          file_size_kb: Math.round(file.size / 1024),
-        });
-        this.requestErrorMessage = this.extractErrorMessage(err);
-      },
-    });
+        }),
+      )
+      .subscribe({
+        next: (event: HttpEvent<CandidateUploadResponse>) => {
+          if (event.type === HttpEventType.UploadProgress && event.total) {
+            this.uploadProgress = Math.round((event.loaded / event.total) * 100);
+            this.cdr.markForCheck();
+          } else if (event.type === HttpEventType.Response) {
+            this.uploadProgress = 100;
+            this.result = event.body ?? null;
+            this.cdr.markForCheck();
+          }
+        },
+        error: (err: unknown) => {
+          this.uploadProgress = 0;
+          this.telemetry.track('cv_upload_failed', {
+            file_extension: this.fileExtension(file.name),
+            file_size_kb: Math.round(file.size / 1024),
+          });
+          this.requestErrorMessage = this.extractErrorMessage(err);
+          this.cdr.markForCheck();
+        },
+      });
   }
 
   private validateFile(file: File): string | null {

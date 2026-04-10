@@ -8,6 +8,7 @@ import { guestGuard } from './core/guards/guest.guard';
 import { AdminUsersComponent } from './pages/admin-users/admin-users.component';
 import { UnauthorizedComponent } from './pages/unauthorized/unauthorized.component';
 import { CvUploadComponent } from './pages/cv-upload/cv-upload.component';
+import { CandidatesComponent } from './pages/candidates/candidates.component';
 import { EmployeesComponent } from './pages/employees/employees.component';
 import { JobsComponent } from './pages/jobs/jobs.component';
 import { SkillsComponent } from './pages/skills/skills.component';
@@ -18,6 +19,7 @@ export const routes: Routes = [
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
   { path: 'matching', component: MatchingComponent, canActivate: [authGuard] },
   { path: 'cv-upload', component: CvUploadComponent, canActivate: [authGuard] },
+  { path: 'candidates', component: CandidatesComponent, canActivate: [authGuard] },
   { path: 'admin/employees', component: EmployeesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/jobs', component: JobsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/skills', component: SkillsComponent, canActivate: [authGuard, adminGuard] },

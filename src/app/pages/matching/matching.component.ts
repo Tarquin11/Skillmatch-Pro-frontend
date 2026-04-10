@@ -79,6 +79,7 @@ export class MatchingComponent implements OnDestroy {
       limit: [50, [Validators.required, Validators.min(1), Validators.max(2000)]],
     });
     this.restorePreferences();
+    this.enforceScoreSortDirection();
   }
 
   submit(): void {
@@ -139,11 +140,14 @@ export class MatchingComponent implements OnDestroy {
   }
 
   onSort(key: SortKey): void {
-    if (this.sortKey === key) {
+    if (key === 'score') {
+      this.sortKey = 'score';
+      this.sortDirection = 'desc';
+    } else if (this.sortKey === key) {
       this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
     } else {
       this.sortKey = key;
-      this.sortDirection = key === 'score' ? 'desc' : 'asc';
+      this.sortDirection = 'asc';
     }
     this.persistSortPreference();
     this.currentPage = 1;
@@ -323,6 +327,7 @@ export class MatchingComponent implements OnDestroy {
   }
 
   private runMatch(payload: JobMatchRequest): void {
+    this.enforceScoreSortDirection();
     this.loading = true;
     this.errorKey = '';
     this.results = [];
@@ -337,7 +342,8 @@ export class MatchingComponent implements OnDestroy {
       })
       .subscribe({
         next: (res) => {
-          this.results = res.results ?? res.ranked ?? res.candidates ?? [];
+          const rows = res.results ?? res.ranked ?? res.candidates ?? [];
+          this.results = this.sortRowsForDisplay(rows);
           if (this.selectedCandidate?.employee_id !== undefined) {
             this.selectedCandidate =
               this.results.find((row) => row.employee_id === this.selectedCandidate?.employee_id) ?? null;
@@ -393,6 +399,21 @@ export class MatchingComponent implements OnDestroy {
         this.visibleColumns = next;
       }
     }
+  }
+
+  private enforceScoreSortDirection(): void {
+    if (this.sortKey !== 'score' || this.sortDirection === 'desc') {
+      return;
+    }
+    this.sortDirection = 'desc';
+    this.persistSortPreference();
+  }
+
+  private sortRowsForDisplay(rows: MatchCandidate[]): MatchCandidate[] {
+    if (this.sortKey !== 'score') {
+      return rows;
+    }
+    return [...rows].sort((a, b) => this.scorePercent(b) - this.scorePercent(a));
   }
 
   private persistPageSizePreference(): void {

@@ -27,6 +27,7 @@
       <a *ngIf="isAuthenticated()" routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | t }}</a>
       <a *ngIf="isAuthenticated()" routerLink="/matching" routerLinkActive="active">{{ 'nav.matching' | t }}</a>
       <a *ngIf="isAuthenticated()" routerLink="/cv-upload" routerLinkActive="active">{{ 'nav.cvUpload' | t }}</a>
+      <a *ngIf="isAuthenticated()" routerLink="/candidates" routerLinkActive="active">{{ 'nav.candidates' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/employees" routerLinkActive="active">{{ 'nav.employees' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/jobs" routerLinkActive="active">{{ 'nav.jobs' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/skills" routerLinkActive="active">{{ 'nav.skills' | t }}</a>

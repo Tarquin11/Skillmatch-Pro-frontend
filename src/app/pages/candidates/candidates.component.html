@@ -1,0 +1,113 @@
+<section class="space-y-6">
+  <app-page-header titleKey="candidates.title" subtitleKey="candidates.subtitle"></app-page-header>
+
+  <div *ngIf="errorMessage" class="card p-4 border border-red-200 bg-red-50 text-red-700" role="alert">
+    {{ errorMessage | t }}
+  </div>
+
+  <app-data-table
+    [loading]="loading"
+    [hasRows]="candidates.length > 0"
+    [skeletonRows]="6"
+    [skeletonCols]="6"
+    loadingKey="candidates.loading"
+    emptyTitleKey="candidates.empty"
+  >
+    <div dataTableToolbar class="flex flex-wrap gap-3 items-end">
+      <div class="w-full sm:w-auto sm:min-w-[260px]">
+        <label class="block text-xs text-gray-600 mb-1">{{ 'candidates.filters.search' | t }}</label>
+        <input
+          #searchBox
+          type="text"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 min-h-11"
+          [value]="search"
+          (keydown.enter)="applySearch(searchBox.value)"
+          aria-label="Search candidates"
+        />
+      </div>
+      <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="applySearch(searchBox.value)">
+        {{ 'candidates.filters.apply' | t }}
+      </button>
+      <button
+        type="button"
+        class="btn-secondary w-full sm:w-auto min-h-11"
+        (click)="applySearch(''); searchBox.value=''"
+      >
+        {{ 'candidates.filters.clear' | t }}
+      </button>
+
+      <div class="w-full sm:w-auto sm:ml-auto">
+        <label class="text-sm text-gray-700">
+          {{ 'candidates.pagination.pageSize' | t }}
+          <select
+            class="ml-0 mt-1 sm:mt-0 sm:ml-2 rounded-lg border border-gray-300 px-2 py-2 min-h-11 w-full sm:w-auto"
+            [value]="pageSize"
+            (change)="onPageSizeChange($any($event.target).value)"
+            aria-label="Candidates page size"
+          >
+            <option *ngFor="let size of pageSizeOptions" [value]="size">{{ size }}</option>
+          </select>
+        </label>
+      </div>
+    </div>
+
+    <div dataTableContent class="overflow-x-auto">
+      <table class="min-w-full text-sm" aria-label="Candidates table">
+        <thead class="bg-gray-100">
+          <tr>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('id')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('id')">
+                ID {{ sortIndicator('id') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('name')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('name')">
+                {{ 'candidates.table.name' | t }} {{ sortIndicator('name') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('email')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('email')">
+                {{ 'candidates.table.email' | t }} {{ sortIndicator('email') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('title')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('title')">
+                {{ 'candidates.table.title' | t }} {{ sortIndicator('title') }}
+              </button>
+            </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.experience' | t }}</th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.skills' | t }}</th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('uploaded_at')">
+              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('uploaded_at')">
+                {{ 'candidates.table.uploadedAt' | t }} {{ sortIndicator('uploaded_at') }}
+              </button>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let row of candidates" class="border-t">
+            <td class="px-4 py-3">{{ row.id }}</td>
+            <td class="px-4 py-3">{{ row.full_name || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ row.email || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ row.predicted_title || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ row.predicted_experience_years ?? ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ skillsLabel(row) }}</td>
+            <td class="px-4 py-3">{{ row.uploaded_at ? (row.uploaded_at | date:'medium') : ('common.na' | t) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div dataTableFooter class="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2 border-t border-gray-200">
+      <span class="text-sm text-gray-600">{{ 'candidates.pagination.page' | t }} {{ currentPage }}</span>
+      <div class="grid w-full sm:w-auto grid-cols-2 gap-2">
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasPrev || loading" (click)="prevPage()">
+          {{ 'candidates.pagination.prev' | t }}
+        </button>
+        <button type="button" class="btn-secondary w-full min-h-11" [disabled]="!hasNext || loading" (click)="nextPage()">
+          {{ 'candidates.pagination.next' | t }}
+        </button>
+      </div>
+    </div>
+  </app-data-table>
+</section>

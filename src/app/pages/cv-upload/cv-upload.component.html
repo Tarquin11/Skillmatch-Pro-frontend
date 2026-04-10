@@ -77,6 +77,7 @@
       <p><strong>{{ 'cvUpload.result.textLength' | t }}:</strong> {{ result.text_length }}</p>
       <p><strong>{{ 'cvUpload.result.predictedTitle' | t }}:</strong> {{ result.predicted_title || ('common.na' | t) }}</p>
       <p><strong>{{ 'cvUpload.result.predictedExperience' | t }}:</strong> {{ result.predicted_experience_years ?? ('common.na' | t) }}</p>
+      <p class="text-xs text-gray-500">{{ 'cvUpload.result.savedHint' | t }}</p>
     </div>
 
     <div *ngIf="result.errors.length" class="rounded-lg border border-red-200 bg-red-50 p-3">
@@ -109,6 +110,88 @@
     </div>
 
     <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.languages' | t }}</h3>
+      <div *ngIf="result.language_details.length; else noLanguagesBlock" class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let language of result.language_details"
+          class="inline-flex items-center rounded-full bg-indigo-100 text-indigo-800 border border-indigo-200 px-3 py-1 text-xs font-semibold"
+        >
+          {{ language.language }}{{ language.level ? (' (' + language.level + ')') : '' }}
+        </span>
+      </div>
+      <ng-template #noLanguagesBlock>
+        <app-empty-state [titleKey]="'cvUpload.result.noLanguages'"></app-empty-state>
+      </ng-template>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.channels' | t }}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.catalog' | t }}</p>
+          <p>{{ result.extraction_channels.catalog_match.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.openVocab' | t }}</p>
+          <p>{{ result.extraction_channels.open_vocab.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.softSkill' | t }}</p>
+          <p>{{ result.extraction_channels.soft_skill.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.sentence' | t }}</p>
+          <p>{{ result.extraction_channels.sentence.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.semanticAugment' | t }}</p>
+          <p>{{ result.extraction_channels.semantic_augment.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.language' | t }}</p>
+          <p>{{ result.extraction_channels.language.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.projectText' | t }}</p>
+          <p>{{ result.extraction_channels.project_text.length }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.groupedSkills' | t }}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs" *ngIf="result.skills_grouped | keyvalue as grouped">
+        <div *ngFor="let group of grouped" class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ group.key }}</p>
+          <p>{{ group.value.length ? group.value.join(', ') : ('common.na' | t) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.skillHierarchy' | t }}</h3>
+      <div *ngIf="result.skill_hierarchy.length; else noHierarchyBlock" class="space-y-2 text-xs">
+        <div *ngFor="let node of result.skill_hierarchy" class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold">{{ node.parent }}</p>
+          <p>{{ node.subskills.join(', ') }}</p>
+        </div>
+      </div>
+      <ng-template #noHierarchyBlock>
+        <app-empty-state [titleKey]="'cvUpload.result.noSkillHierarchy'"></app-empty-state>
+      </ng-template>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.skillGraph' | t }}</h3>
+      <div *ngIf="result.skill_graph | keyvalue as graphNodes" class="space-y-2 text-xs">
+        <div *ngFor="let node of graphNodes" class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold">{{ node.key }} ({{ (node.value.confidence * 100) | number:'1.0-0' }}%)</p>
+          <p>{{ node.value.children.length ? node.value.children.join(', ') : ('common.na' | t) }}</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
       <h3 class="font-semibold mb-2">{{ 'cvUpload.result.extractedSkills' | t }}</h3>
       <app-data-table
         [loading]="false"
@@ -121,14 +204,31 @@
               <tr>
                 <th class="text-left px-3 py-2">{{ 'cvUpload.result.skill' | t }}</th>
                 <th class="text-left px-3 py-2">{{ 'cvUpload.result.confidence' | t }}</th>
+                <th class="text-left px-3 py-2">{{ 'cvUpload.result.confidenceNormalized' | t }}</th>
                 <th class="text-left px-3 py-2">{{ 'cvUpload.result.source' | t }}</th>
+                <th class="text-left px-3 py-2">{{ 'cvUpload.result.evidence' | t }}</th>
               </tr>
             </thead>
             <tbody>
               <tr *ngFor="let item of result.extracted_skills" class="border-t border-gray-200">
                 <td class="px-3 py-2">{{ item.skill }}</td>
                 <td class="px-3 py-2">{{ confidenceLabel(item) }}</td>
-                <td class="px-3 py-2">{{ item.source }}</td>
+                <td class="px-3 py-2">{{ confidenceNormalizedLabel(item) }}</td>
+                <td class="px-3 py-2">
+                  <div class="flex flex-wrap items-center gap-1">
+                    <span class="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 text-primary-800 px-2 py-0.5 text-[11px] font-semibold">
+                      {{ sourceLabelKey(item) | t }}
+                    </span>
+                    <span
+                      class="inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold"
+                      [ngClass]="confidenceBandClasses(item)"
+                    >
+                      {{ confidenceBandLabelKey(item) | t }}
+                    </span>
+                  </div>
+                  <p class="mt-1 text-[11px] text-gray-500">{{ item.source }}</p>
+                </td>
+                <td class="px-3 py-2">{{ item.evidence.length ? item.evidence.join(' | ') : ('common.na' | t) }}</td>
               </tr>
             </tbody>
           </table>
@@ -142,4 +242,3 @@
     </div>
   </article>
 </section>
-
