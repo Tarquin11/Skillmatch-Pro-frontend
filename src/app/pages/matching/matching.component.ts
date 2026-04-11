@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { JobMatchRequest, MatchCandidate, MatchingApiService } from '../../core/services/matching-api.service';
@@ -13,6 +13,7 @@ import { UxTelemetryService } from '../../core/services/ux-telemetry.service';
 type SortKey = 'name' | 'score' | 'title' | 'experience';
 type SortDirection = 'asc' | 'desc';
 type ColumnKey = 'name' | 'score' | 'title' | 'experience';
+type MatchCandidateScope = 'all' | 'candidates';
 type ExplainabilityComponent = {
   feature: string;
   labelKey: string;
@@ -43,6 +44,7 @@ export class MatchingComponent implements OnDestroy {
   results: MatchCandidate[] = [];
   hasSearched = false;
   lastPayload: JobMatchRequest | null = null;
+  lastCandidateScope: MatchCandidateScope = 'all';
   selectedCandidate: MatchCandidate | null = null;
 
   sortKey: SortKey = 'score';
@@ -71,10 +73,12 @@ export class MatchingComponent implements OnDestroy {
     private readonly api: MatchingApiService,
     private readonly preferences: UserPreferencesService,
     private readonly telemetry: UxTelemetryService,
+    private readonly cdr: ChangeDetectorRef,
   ) {
     this.form = this.fb.nonNullable.group({
       job_title: ['', Validators.required],
       required_skills: ['python, sql', Validators.required],
+      candidate_scope: ['all' as MatchCandidateScope, Validators.required],
       min_experience: [0, [Validators.required, Validators.min(0)]],
       limit: [50, [Validators.required, Validators.min(1), Validators.max(2000)]],
     });
@@ -104,17 +108,20 @@ export class MatchingComponent implements OnDestroy {
       min_experience: Number(this.form.value.min_experience),
       limit: Number(this.form.value.limit),
     };
+    const candidateScope = (this.form.value.candidate_scope ?? 'all') as MatchCandidateScope;
 
     this.hasSubmittedMatch = true;
     this.telemetry.track('matching_search_used', {
       required_skills_count: requiredSkills.length,
       min_experience: payload.min_experience,
       limit: payload.limit,
+      candidate_scope: candidateScope,
     });
 
     this.lastPayload = payload;
+    this.lastCandidateScope = candidateScope;
     this.currentPage = 1;
-    this.runMatch(payload);
+    this.runMatch(payload, candidateScope);
   }
 
   retry(): void {
@@ -124,8 +131,9 @@ export class MatchingComponent implements OnDestroy {
       page_size: this.pageSize,
       sort_key: this.sortKey,
       sort_direction: this.sortDirection,
+      candidate_scope: this.lastCandidateScope,
     });
-    this.runMatch(this.lastPayload);
+    this.runMatch(this.lastPayload, this.lastCandidateScope);
   }
 
   ngOnDestroy(): void {
@@ -152,7 +160,7 @@ export class MatchingComponent implements OnDestroy {
     this.persistSortPreference();
     this.currentPage = 1;
     if (this.lastPayload) {
-      this.runMatch(this.lastPayload);
+      this.runMatch(this.lastPayload, this.lastCandidateScope);
     }
   }
 
@@ -177,20 +185,20 @@ export class MatchingComponent implements OnDestroy {
     this.persistPageSizePreference();
     this.currentPage = 1;
     if (this.lastPayload) {
-      this.runMatch(this.lastPayload);
+      this.runMatch(this.lastPayload, this.lastCandidateScope);
     }
   }
 
   prevPage(): void {
     if (!this.hasPrev || !this.lastPayload) return;
     this.currentPage -= 1;
-    this.runMatch(this.lastPayload);
+    this.runMatch(this.lastPayload, this.lastCandidateScope);
   }
 
   nextPage(): void {
     if (!this.hasNext || !this.lastPayload) return;
     this.currentPage += 1;
-    this.runMatch(this.lastPayload);
+    this.runMatch(this.lastPayload, this.lastCandidateScope);
   }
 
   toggleColumn(column: ColumnKey): void {
@@ -218,6 +226,7 @@ export class MatchingComponent implements OnDestroy {
         page_size: fullSize,
         sort_by: this.sortKey,
         sort_direction: this.sortDirection,
+        candidate_scope: this.lastCandidateScope,
       })
       .subscribe({
         next: (res) => {
@@ -326,7 +335,7 @@ export class MatchingComponent implements OnDestroy {
     }
   }
 
-  private runMatch(payload: JobMatchRequest): void {
+  private runMatch(payload: JobMatchRequest, scope: MatchCandidateScope = this.lastCandidateScope): void {
     this.enforceScoreSortDirection();
     this.loading = true;
     this.errorKey = '';
@@ -339,6 +348,7 @@ export class MatchingComponent implements OnDestroy {
         page_size: this.pageSize,
         sort_by: this.sortKey,
         sort_direction: this.sortDirection,
+        candidate_scope: scope,
       })
       .subscribe({
         next: (res) => {
@@ -356,6 +366,11 @@ export class MatchingComponent implements OnDestroy {
           this.hasNext = Boolean(res.has_next ?? false);
           this.hasPrev = Boolean(res.has_prev ?? false);
           this.loading = false;
+          try {
+            this.cdr.detectChanges();
+          } catch {
+            // ignore
+          }
         },
         error: () => {
           this.errorKey = 'matching.error.request';

@@ -17,6 +17,9 @@ const CODE_TO_I18N_KEY: Record<string, string> = {
   skill_already_exists: 'errors.skillExists',
   invalid_file_type: 'errors.invalidFileType',
   cv_processing_failed: 'errors.cvProcessingFailed',
+  candidate_not_found: 'errors.notFound',
+  invalid_candidate_name: 'errors.validation',
+  invalid_candidate_id: 'errors.validation',
   validation_error: 'errors.validation',
   internal_error: 'errors.server',
 };

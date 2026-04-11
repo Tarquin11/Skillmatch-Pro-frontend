@@ -1,15 +1,66 @@
 <section class="space-y-6">
   <app-page-header titleKey="candidates.title" subtitleKey="candidates.subtitle"></app-page-header>
 
+  <div *ngIf="successKey" class="card p-4 border border-green-200 bg-green-50 text-green-700">
+    {{ successKey | t }}
+  </div>
+
+  <div *ngIf="actionErrorMessage" class="card p-4 border border-red-200 bg-red-50 text-red-700" role="alert">
+    {{ actionErrorMessage | t }}
+  </div>
+
   <div *ngIf="errorMessage" class="card p-4 border border-red-200 bg-red-50 text-red-700" role="alert">
     {{ errorMessage | t }}
   </div>
+
+  <article *ngIf="selectedViewCandidate() as selected" class="card p-5 space-y-4">
+    <div class="flex items-center justify-between gap-3">
+      <h3 class="text-lg font-semibold">{{ 'candidates.view.title' | t }} - {{ selected.full_name || ('common.na' | t) }}</h3>
+      <button type="button" class="btn-secondary min-h-11" (click)="closeViewSkills()">
+        {{ 'candidates.view.close' | t }}
+      </button>
+    </div>
+
+    <p class="text-sm text-gray-600">
+      {{ 'candidates.view.subtitle' | t }}
+    </p>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+      <div>
+        <p class="text-xs text-gray-500">{{ 'candidates.table.candidateId' | t }}</p>
+        <p class="font-medium">{{ selected.employee_number || ('common.na' | t) }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500">{{ 'candidates.table.title' | t }}</p>
+        <p class="font-medium">{{ selected.predicted_title || ('common.na' | t) }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500">{{ 'candidates.table.experience' | t }}</p>
+        <p class="font-medium">{{ selected.predicted_experience_years ?? ('common.na' | t) }}</p>
+      </div>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium mb-2">{{ 'candidates.view.skills' | t }}</p>
+      <div *ngIf="selected.skills.length; else noSkillsBlock" class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let skill of selected.skills"
+          class="inline-flex items-center rounded-full border border-primary-200 bg-primary-50 px-3 py-1 text-xs text-primary-800"
+        >
+          {{ skill }}
+        </span>
+      </div>
+      <ng-template #noSkillsBlock>
+        <p class="text-sm text-gray-500">{{ 'candidates.view.noSkills' | t }}</p>
+      </ng-template>
+    </div>
+  </article>
 
   <app-data-table
     [loading]="loading"
     [hasRows]="candidates.length > 0"
     [skeletonRows]="6"
-    [skeletonCols]="6"
+    [skeletonCols]="8"
     loadingKey="candidates.loading"
     emptyTitleKey="candidates.empty"
   >
@@ -60,6 +111,7 @@
                 ID {{ sortIndicator('id') }}
               </button>
             </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.candidateId' | t }}</th>
             <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('name')">
               <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('name')">
                 {{ 'candidates.table.name' | t }} {{ sortIndicator('name') }}
@@ -82,17 +134,42 @@
                 {{ 'candidates.table.uploadedAt' | t }} {{ sortIndicator('uploaded_at') }}
               </button>
             </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.actions' | t }}</th>
           </tr>
         </thead>
         <tbody>
           <tr *ngFor="let row of candidates" class="border-t">
             <td class="px-4 py-3">{{ row.id }}</td>
+            <td class="px-4 py-3">{{ row.employee_number || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.full_name || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.email || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.predicted_title || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.predicted_experience_years ?? ('common.na' | t) }}</td>
-            <td class="px-4 py-3">{{ skillsLabel(row) }}</td>
+            <td class="px-4 py-3">
+              <p>{{ skillsPreview(row) }}</p>
+              <p class="text-xs text-gray-500">{{ skillsCount(row) }} {{ 'candidates.view.skills' | t }}</p>
+            </td>
             <td class="px-4 py-3">{{ row.uploaded_at ? (row.uploaded_at | date:'medium') : ('common.na' | t) }}</td>
+            <td class="px-4 py-3 whitespace-nowrap text-right">
+              <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-end">
+                <button
+                  type="button"
+                  class="btn-secondary px-3 py-2 text-sm"
+                  [ngClass]="isViewing(row) ? 'border-primary-400 text-primary-700' : ''"
+                  (click)="startViewSkills(row)"
+                >
+                  {{ 'candidates.table.view' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary px-3 py-2 text-sm"
+                  [disabled]="deletingId === row.id"
+                  (click)="requestDeleteCandidate(row)"
+                >
+                  {{ deletingId === row.id ? ('common.loading' | t) : ('candidates.table.delete' | t) }}
+                </button>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -110,4 +187,15 @@
       </div>
     </div>
   </app-data-table>
+
+  <app-confirm-dialog
+    [open]="!!deleteTarget"
+    titleKey="ui.confirmDelete.title"
+    messageKey="ui.confirmDelete.candidateMessage"
+    [danger]="true"
+    confirmLabelKey="ui.confirmDelete.confirm"
+    cancelLabelKey="ui.confirmDelete.cancel"
+    (cancel)="cancelDelete()"
+    (confirm)="confirmDeleteCandidate()"
+  ></app-confirm-dialog>
 </section>

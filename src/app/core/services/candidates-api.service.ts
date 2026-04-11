@@ -61,12 +61,19 @@ export interface CandidateUploadResponse {
 
 export interface CandidateProfile {
   id: number;
+  employee_number: string;
   full_name: string;
   email: string;
   predicted_title: string | null;
   predicted_experience_years: number | null;
   skills: string[];
   uploaded_at: string | null;
+}
+
+export interface CandidateUpdatePayload {
+  full_name?: string;
+  employee_number?: string;
+  skills?: string[];
 }
 
 export interface CandidateListQuery {
@@ -101,5 +108,13 @@ export class CandidatesApiService {
     if (query?.sort_by) params = params.set('sort_by', query.sort_by);
     if (query?.sort_dir) params = params.set('sort_dir', query.sort_dir);
     return this.http.get<CandidateProfile[]>(`${this.baseUrl}/candidates/`, { params });
+  }
+
+  updateCandidate(candidateId: number, payload: CandidateUpdatePayload): Observable<CandidateProfile> {
+    return this.http.patch<CandidateProfile>(`${this.baseUrl}/candidates/${candidateId}`, payload);
+  }
+
+  deleteCandidate(candidateId: number): Observable<void> {
+    return this.http.delete<void>(`${this.baseUrl}/candidates/${candidateId}`);
   }
 }

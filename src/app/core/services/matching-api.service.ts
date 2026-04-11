@@ -45,6 +45,7 @@ export interface JobMatchQueryOptions {
   page_size?: number;
   sort_by?: 'score' | 'name' | 'title' | 'experience';
   sort_direction?: 'asc' | 'desc';
+  candidate_scope?: 'all' | 'candidates';
 }
 
 export interface ModelInfoResponse {
@@ -88,6 +89,7 @@ export class MatchingApiService {
     if (options?.page_size) params = params.set('page_size', options.page_size);
     if (options?.sort_by) params = params.set('sort_by', options.sort_by);
     if (options?.sort_direction) params = params.set('sort_direction', options.sort_direction);
+    if (options?.candidate_scope) params = params.set('candidate_scope', options.candidate_scope);
     return this.http.post<JobMatchResponse>(`${this.baseUrl}/match/job`, payload, { params });
   }
 }

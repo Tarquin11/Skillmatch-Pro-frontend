@@ -21,6 +21,17 @@
       />
     </app-form-field>
 
+    <app-form-field forId="match-candidate-scope" labelKey="matching.candidate_scope">
+      <select
+        id="match-candidate-scope"
+        formControlName="candidate_scope"
+        class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
+      >
+        <option value="all">{{ 'matching.scope.all' | t }}</option>
+        <option value="candidates">{{ 'matching.scope.candidates' | t }}</option>
+      </select>
+    </app-form-field>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
       <app-form-field forId="match-min-exp" labelKey="matching.min_experience">
         <input
