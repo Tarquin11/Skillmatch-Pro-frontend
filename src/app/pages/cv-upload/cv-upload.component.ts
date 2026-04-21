@@ -69,6 +69,17 @@ export class CvUploadComponent implements OnDestroy {
     this.validationErrorKey = this.validateFile(file) ?? '';
   }
 
+  prepareFileSelection(event: Event): void {
+    if (this.uploading) {
+      event.preventDefault();
+      return;
+    }
+    const target = event.target as HTMLInputElement | null;
+    if (target) {
+      target.value = '';
+    }
+  }
+
   submit(): void {
     if (!this.selectedFile) {
       this.validationErrorKey = 'cvUpload.validation.required';

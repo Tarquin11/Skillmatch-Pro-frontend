@@ -18,6 +18,7 @@
         accept=".pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
         class="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500"
         [disabled]="uploading"
+        (click)="prepareFileSelection($event)"
         (change)="onFileChange($event)"
         [attr.aria-invalid]="validationErrorKey ? 'true' : 'false'"
       />

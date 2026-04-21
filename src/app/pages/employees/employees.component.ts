@@ -122,6 +122,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     }
 
     const updatePayload: EmployeeUpdatePayload = {
+      employeeNumber: raw.employeeNumber.trim(),
       first_name: raw.first_name.trim(),
       last_name: raw.last_name.trim(),
       email: raw.email.trim(),
@@ -135,6 +136,7 @@ export class EmployeesComponent implements OnInit, OnDestroy {
     if (localIndex >= 0) {
       this.employees[localIndex] = {
         ...this.employees[localIndex],
+        employee_number: updatePayload.employeeNumber ?? this.employees[localIndex].employee_number,
         first_name: updatePayload.first_name ?? this.employees[localIndex].first_name,
         last_name: updatePayload.last_name ?? this.employees[localIndex].last_name,
         full_name: updatePayload.full_name ?? this.employees[localIndex].full_name,
