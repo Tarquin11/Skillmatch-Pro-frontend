@@ -22,7 +22,7 @@ describe('MatchingApiService', () => {
   it('should call GET /ai/model-info', () => {
     service.getModelInfo().subscribe();
 
-    const req = httpMock.expectOne('http://127.0.0.1:8000/ai/model-info');
+    const req = httpMock.expectOne('https://localhost:8000/ai/model-info');
     expect(req.request.method).toBe('GET');
     req.flush({
       model_loaded: true,
@@ -50,7 +50,7 @@ describe('MatchingApiService', () => {
       )
       .subscribe();
 
-    const req = httpMock.expectOne((r) => r.url === 'http://127.0.0.1:8000/match/job');
+    const req = httpMock.expectOne((r) => r.url === 'https://localhost:8000/match/job');
     expect(req.request.method).toBe('POST');
     expect(req.request.params.get('page')).toBe('2');
     expect(req.request.params.get('page_size')).toBe('25');
