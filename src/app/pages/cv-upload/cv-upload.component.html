@@ -81,6 +81,15 @@
       <p class="text-xs text-gray-500">{{ 'cvUpload.result.savedHint' | t }}</p>
     </div>
 
+    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">
+      <h3 class="font-semibold mb-3">{{ 'cvUpload.result.extractedContact' | t }}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+        <p><strong>{{ 'cvUpload.result.extractedName' | t }}:</strong> {{ result.extracted_full_name || ('common.na' | t) }}</p>
+        <p><strong>{{ 'cvUpload.result.extractedEmail' | t }}:</strong> {{ result.extracted_email || ('common.na' | t) }}</p>
+        <p><strong>{{ 'cvUpload.result.extractedPhone' | t }}:</strong> {{ result.extracted_phone || ('common.na' | t) }}</p>
+      </div>
+    </div>
+
     <div *ngIf="result.errors.length" class="rounded-lg border border-red-200 bg-red-50 p-3">
       <h3 class="font-semibold text-red-800 mb-2">{{ 'cvUpload.result.errors' | t }}</h3>
       <ul class="list-disc pl-5 text-sm text-red-700 space-y-1">

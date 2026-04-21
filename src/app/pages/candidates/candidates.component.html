@@ -25,10 +25,18 @@
       {{ 'candidates.view.subtitle' | t }}
     </p>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-3 text-sm">
       <div>
         <p class="text-xs text-gray-500">{{ 'candidates.table.candidateId' | t }}</p>
         <p class="font-medium">{{ selected.employee_number || ('common.na' | t) }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500">{{ 'candidates.table.email' | t }}</p>
+        <p class="font-medium break-all">{{ selected.email || ('common.na' | t) }}</p>
+      </div>
+      <div>
+        <p class="text-xs text-gray-500">{{ 'candidates.table.phone' | t }}</p>
+        <p class="font-medium">{{ selected.phone || ('common.na' | t) }}</p>
       </div>
       <div>
         <p class="text-xs text-gray-500">{{ 'candidates.table.title' | t }}</p>
@@ -56,11 +64,85 @@
     </div>
   </article>
 
+  <article class="card p-5 space-y-4">
+    <div>
+      <h3 class="text-lg font-semibold">{{ 'candidates.modify.title' | t }}</h3>
+      <p class="text-sm text-gray-600">{{ 'candidates.modify.subtitle' | t }}</p>
+    </div>
+
+    <form *ngIf="selectedEditCandidate() as editingCandidate; else noEditSelection" [formGroup]="form" (ngSubmit)="submitEdit()" class="space-y-4">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <app-form-field
+          forId="candidate-full-name"
+          labelKey="candidates.modify.name"
+          [required]="true"
+          [errorKey]="controlErrorKey('full_name')"
+        >
+          <input
+            id="candidate-full-name"
+            formControlName="full_name"
+            class="w-full rounded-lg border px-3 py-2"
+            [ngClass]="controlInvalid('full_name') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+          />
+        </app-form-field>
+
+        <app-form-field
+          forId="candidate-employee-number"
+          labelKey="candidates.modify.candidateId"
+          [required]="true"
+          [errorKey]="controlErrorKey('employee_number')"
+        >
+          <input
+            id="candidate-employee-number"
+            formControlName="employee_number"
+            class="w-full rounded-lg border px-3 py-2"
+            [ngClass]="controlInvalid('employee_number') ? 'border-red-400 bg-red-50' : 'border-gray-300'"
+          />
+        </app-form-field>
+
+        <div class="md:col-span-2 rounded-lg border border-gray-200 bg-gray-50 p-4 text-sm">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <p><span class="text-gray-500">{{ 'candidates.table.email' | t }}:</span> {{ editingCandidate.email || ('common.na' | t) }}</p>
+            <p><span class="text-gray-500">{{ 'candidates.table.phone' | t }}:</span> {{ editingCandidate.phone || ('common.na' | t) }}</p>
+          </div>
+        </div>
+
+        <div class="md:col-span-2">
+          <app-form-field
+            forId="candidate-skills"
+            labelKey="candidates.modify.skills"
+            hintKey="candidates.modify.skillsHint"
+          >
+            <textarea
+              id="candidate-skills"
+              formControlName="skills_text"
+              rows="4"
+              class="w-full rounded-lg border border-gray-300 px-3 py-2"
+            ></textarea>
+          </app-form-field>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row gap-3">
+        <button type="submit" class="btn-primary w-full sm:w-auto min-h-11" [disabled]="saving">
+          {{ saving ? ('common.loading' | t) : ('candidates.modify.save' | t) }}
+        </button>
+        <button type="button" class="btn-secondary w-full sm:w-auto min-h-11" (click)="cancelEdit()">
+          {{ 'candidates.modify.cancel' | t }}
+        </button>
+      </div>
+    </form>
+
+    <ng-template #noEditSelection>
+      <p class="text-sm text-gray-500">{{ 'candidates.modify.noneSelected' | t }}</p>
+    </ng-template>
+  </article>
+
   <app-data-table
     [loading]="loading"
     [hasRows]="candidates.length > 0"
     [skeletonRows]="6"
-    [skeletonCols]="8"
+    [skeletonCols]="9"
     loadingKey="candidates.loading"
     emptyTitleKey="candidates.empty"
   >
@@ -122,6 +204,7 @@
                 {{ 'candidates.table.email' | t }} {{ sortIndicator('email') }}
               </button>
             </th>
+            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.phone' | t }}</th>
             <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('title')">
               <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('title')">
                 {{ 'candidates.table.title' | t }} {{ sortIndicator('title') }}
@@ -141,8 +224,42 @@
           <tr *ngFor="let row of candidates" class="border-t">
             <td class="px-4 py-3">{{ row.id }}</td>
             <td class="px-4 py-3">{{ row.employee_number || ('common.na' | t) }}</td>
-            <td class="px-4 py-3">{{ row.full_name || ('common.na' | t) }}</td>
-            <td class="px-4 py-3">{{ row.email || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">
+              <div *ngIf="isEditingName(row); else readNameBlock" class="space-y-2 min-w-[220px]">
+                <input
+                  #inlineNameInput
+                  type="text"
+                  class="w-full rounded-lg border border-gray-300 px-3 py-2"
+                  [value]="editingNameDraft"
+                  (input)="editingNameDraft = $any($event.target).value"
+                  (keydown.enter)="submitNameEdit(row, inlineNameInput.value)"
+                  (keydown.escape)="cancelEditName()"
+                />
+                <div class="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    class="btn-primary px-3 py-2 text-xs"
+                    [disabled]="savingNameId === row.id"
+                    (click)="submitNameEdit(row, inlineNameInput.value)"
+                  >
+                    {{ savingNameId === row.id ? ('common.loading' | t) : ('candidates.modify.save' | t) }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn-secondary px-3 py-2 text-xs"
+                    [disabled]="savingNameId === row.id"
+                    (click)="cancelEditName()"
+                  >
+                    {{ 'candidates.modify.cancel' | t }}
+                  </button>
+                </div>
+              </div>
+              <ng-template #readNameBlock>
+                {{ row.full_name || ('common.na' | t) }}
+              </ng-template>
+            </td>
+            <td class="px-4 py-3 break-all">{{ row.email || ('common.na' | t) }}</td>
+            <td class="px-4 py-3">{{ row.phone || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.predicted_title || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.predicted_experience_years ?? ('common.na' | t) }}</td>
             <td class="px-4 py-3">
@@ -159,6 +276,21 @@
                   (click)="startViewSkills(row)"
                 >
                   {{ 'candidates.table.view' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary px-3 py-2 text-sm"
+                  [disabled]="isEditingName(row) || savingNameId === row.id"
+                  (click)="startEditName(row)"
+                >
+                  {{ 'candidates.table.editName' | t }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-secondary px-3 py-2 text-sm"
+                  (click)="startEditCandidate(row)"
+                >
+                  {{ 'candidates.table.modify' | t }}
                 </button>
                 <button
                   type="button"

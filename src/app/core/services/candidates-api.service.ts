@@ -55,6 +55,9 @@ export interface CandidateUploadResponse {
   extraction_channels: CandidateExtractionChannels;
   preview: string;
   extracted_skills: CandidateSkillExtraction[];
+  extracted_full_name: string | null;
+  extracted_email: string | null;
+  extracted_phone: string | null;
   predicted_title: string | null;
   predicted_experience_years: number | null;
 }
@@ -64,6 +67,7 @@ export interface CandidateProfile {
   employee_number: string;
   full_name: string;
   email: string;
+  phone: string | null;
   predicted_title: string | null;
   predicted_experience_years: number | null;
   skills: string[];
