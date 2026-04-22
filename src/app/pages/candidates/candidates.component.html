@@ -142,7 +142,7 @@
     [loading]="loading"
     [hasRows]="candidates.length > 0"
     [skeletonRows]="6"
-    [skeletonCols]="9"
+    [skeletonCols]="7"
     loadingKey="candidates.loading"
     emptyTitleKey="candidates.empty"
   >
@@ -205,13 +205,6 @@
               </button>
             </th>
             <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.phone' | t }}</th>
-            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('title')">
-              <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('title')">
-                {{ 'candidates.table.title' | t }} {{ sortIndicator('title') }}
-              </button>
-            </th>
-            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.experience' | t }}</th>
-            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'candidates.table.skills' | t }}</th>
             <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col" [attr.aria-sort]="ariaSort('uploaded_at')">
               <button type="button" class="font-semibold hover:text-primary-700" (click)="onSort('uploaded_at')">
                 {{ 'candidates.table.uploadedAt' | t }} {{ sortIndicator('uploaded_at') }}
@@ -260,18 +253,12 @@
             </td>
             <td class="px-4 py-3 break-all">{{ row.email || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ row.phone || ('common.na' | t) }}</td>
-            <td class="px-4 py-3">{{ row.predicted_title || ('common.na' | t) }}</td>
-            <td class="px-4 py-3">{{ row.predicted_experience_years ?? ('common.na' | t) }}</td>
-            <td class="px-4 py-3">
-              <p>{{ skillsPreview(row) }}</p>
-              <p class="text-xs text-gray-500">{{ skillsCount(row) }} {{ 'candidates.view.skills' | t }}</p>
-            </td>
             <td class="px-4 py-3">{{ row.uploaded_at ? (row.uploaded_at | date:'medium') : ('common.na' | t) }}</td>
-            <td class="px-4 py-3 whitespace-nowrap text-right">
-              <div class="flex flex-col sm:flex-row items-center gap-2 sm:gap-3 justify-end">
+            <td class="px-4 py-3">
+              <div class="grid grid-cols-2 gap-2 min-w-[220px]">
                 <button
                   type="button"
-                  class="btn-secondary px-3 py-2 text-sm"
+                  class="btn-secondary px-3 py-2 text-sm w-full"
                   [ngClass]="isViewing(row) ? 'border-primary-400 text-primary-700' : ''"
                   (click)="startViewSkills(row)"
                 >
@@ -279,7 +266,7 @@
                 </button>
                 <button
                   type="button"
-                  class="btn-secondary px-3 py-2 text-sm"
+                  class="btn-secondary px-3 py-2 text-sm w-full"
                   [disabled]="isEditingName(row) || savingNameId === row.id"
                   (click)="startEditName(row)"
                 >
@@ -287,14 +274,14 @@
                 </button>
                 <button
                   type="button"
-                  class="btn-secondary px-3 py-2 text-sm"
+                  class="btn-secondary px-3 py-2 text-sm w-full"
                   (click)="startEditCandidate(row)"
                 >
                   {{ 'candidates.table.modify' | t }}
                 </button>
                 <button
                   type="button"
-                  class="btn-secondary px-3 py-2 text-sm"
+                  class="btn-secondary px-3 py-2 text-sm w-full"
                   [disabled]="deletingId === row.id"
                   (click)="requestDeleteCandidate(row)"
                 >

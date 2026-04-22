@@ -220,32 +220,36 @@ export class CandidatesComponent implements OnInit {
       return;
     }
 
-    const previousName = row.full_name;
-    row.full_name = fullName;
+    const previous = { ...row, skills: [...(row.skills ?? [])] };
+    this.replaceCandidate({ ...row, full_name: fullName });
     this.savingNameId = row.id;
     this.successKey = '';
     this.actionErrorMessage = '';
 
     this.api
       .updateCandidate(row.id, { full_name: fullName })
-      .pipe(finalize(() => (this.savingNameId = null)))
+      .pipe(
+        finalize(() => {
+          this.savingNameId = null;
+          this.requestRender();
+        }),
+      )
       .subscribe({
         next: (updated) => {
-          const index = this.candidates.findIndex((candidate) => candidate.id === row.id);
-          if (index >= 0) {
-            this.candidates[index] = updated;
-          }
+          this.replaceCandidate(updated);
           if (this.editingCandidateId === row.id) {
             this.form.patchValue({ full_name: updated.full_name ?? '' });
           }
           this.editingNameCandidateId = null;
           this.editingNameDraft = '';
           this.successKey = 'candidates.editName.success';
+          this.requestRender();
         },
         error: (err: unknown) => {
-          row.full_name = previousName;
+          this.replaceCandidate(previous);
           const normalized = this.apiErrorService.normalize(err);
           this.actionErrorMessage = normalized.i18nKey || normalized.message || 'candidates.editName.error';
+          this.requestRender();
         },
       });
   }
@@ -275,12 +279,17 @@ export class CandidatesComponent implements OnInit {
     const previous = index >= 0 ? { ...this.candidates[index], skills: [...(this.candidates[index].skills ?? [])] } : null;
 
     if (index >= 0) {
-      this.candidates[index] = {
-        ...this.candidates[index],
-        full_name: payload.full_name,
-        employee_number: payload.employee_number,
-        skills: payload.skills,
-      };
+      this.candidates = this.candidates.map((candidate, candidateIndex) =>
+        candidateIndex !== index
+          ? candidate
+          : {
+              ...candidate,
+              full_name: payload.full_name,
+              employee_number: payload.employee_number,
+              skills: payload.skills,
+            },
+      );
+      this.requestRender();
     }
 
     this.api
@@ -288,18 +297,18 @@ export class CandidatesComponent implements OnInit {
       .pipe(finalize(() => (this.saving = false)))
       .subscribe({
         next: (updated) => {
-          if (index >= 0) {
-            this.candidates[index] = updated;
-          }
+          this.replaceCandidate(updated);
           this.cancelEdit();
           this.successKey = 'candidates.modify.success';
+          this.requestRender();
         },
         error: (err: unknown) => {
-          if (index >= 0 && previous) {
-            this.candidates[index] = previous;
+          if (previous) {
+            this.replaceCandidate(previous);
           }
           const normalized = this.apiErrorService.normalize(err);
           this.actionErrorMessage = normalized.i18nKey || normalized.message || 'candidates.modify.error';
+          this.requestRender();
         },
       });
   }
@@ -401,11 +410,7 @@ export class CandidatesComponent implements OnInit {
           this.hasPrev = this.currentPage > 1;
           this.hasNext = this.candidates.length >= this.pageSize;
           this.loading = false;
-          try {
-            this.cdr.detectChanges();
-          } catch {
-            // ignore
-          }
+          this.requestRender();
         },
         error: () => {
           this.errorMessage = 'candidates.error.load';
@@ -413,6 +418,7 @@ export class CandidatesComponent implements OnInit {
           this.hasPrev = this.currentPage > 1;
           this.hasNext = false;
           this.loading = false;
+          this.requestRender();
         },
       });
   }
@@ -429,5 +435,17 @@ export class CandidatesComponent implements OnInit {
       out.push(skill);
     }
     return out;
+  }
+
+  private replaceCandidate(updated: CandidateProfile): void {
+    this.candidates = this.candidates.map((candidate) => (candidate.id === updated.id ? updated : candidate));
+  }
+
+  private requestRender(): void {
+    try {
+      this.cdr.detectChanges();
+    } catch {
+      // ignore
+    }
   }
 }
