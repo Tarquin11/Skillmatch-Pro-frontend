@@ -120,6 +120,36 @@
     </div>
 
     <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.certifications' | t }}</h3>
+      <div *ngIf="result.certifications.length; else noCertificationsBlock" class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let certification of result.certifications"
+          class="inline-flex items-center rounded-full bg-emerald-100 text-emerald-800 border border-emerald-200 px-3 py-1 text-xs font-semibold"
+        >
+          {{ certification }}
+        </span>
+      </div>
+      <ng-template #noCertificationsBlock>
+        <app-empty-state [titleKey]="'cvUpload.result.noCertifications'"></app-empty-state>
+      </ng-template>
+    </div>
+
+    <div>
+      <h3 class="font-semibold mb-2">{{ 'cvUpload.result.handsOnProjects' | t }}</h3>
+      <div *ngIf="result.hands_on_projects.length; else noHandsOnProjectsBlock" class="space-y-2">
+        <div
+          *ngFor="let project of result.hands_on_projects"
+          class="rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm text-slate-700"
+        >
+          {{ project }}
+        </div>
+      </div>
+      <ng-template #noHandsOnProjectsBlock>
+        <app-empty-state [titleKey]="'cvUpload.result.noHandsOnProjects'"></app-empty-state>
+      </ng-template>
+    </div>
+
+    <div>
       <h3 class="font-semibold mb-2">{{ 'cvUpload.result.languages' | t }}</h3>
       <div *ngIf="result.language_details.length; else noLanguagesBlock" class="flex flex-wrap gap-2">
         <span
@@ -160,6 +190,14 @@
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.language' | t }}</p>
           <p>{{ result.extraction_channels.language.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.certification' | t }}</p>
+          <p>{{ result.extraction_channels.certification.length }}</p>
+        </div>
+        <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
+          <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.handsOnProject' | t }}</p>
+          <p>{{ result.extraction_channels.hands_on_project.length }}</p>
         </div>
         <div class="rounded-lg border border-gray-200 bg-gray-50 p-3">
           <p class="font-semibold mb-1">{{ 'cvUpload.result.channel.projectText' | t }}</p>

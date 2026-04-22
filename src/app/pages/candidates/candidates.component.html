@@ -62,6 +62,36 @@
         <p class="text-sm text-gray-500">{{ 'candidates.view.noSkills' | t }}</p>
       </ng-template>
     </div>
+
+    <div>
+      <p class="text-sm font-medium mb-2">{{ 'candidates.view.certifications' | t }}</p>
+      <div *ngIf="selected.certifications.length; else noCertificationsBlock" class="flex flex-wrap gap-2">
+        <span
+          *ngFor="let cert of selected.certifications"
+          class="inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-800"
+        >
+          {{ cert }}
+        </span>
+      </div>
+      <ng-template #noCertificationsBlock>
+        <p class="text-sm text-gray-500">{{ 'candidates.view.noCertifications' | t }}</p>
+      </ng-template>
+    </div>
+
+    <div>
+      <p class="text-sm font-medium mb-2">{{ 'candidates.view.handsOnProjects' | t }}</p>
+      <div *ngIf="selected.hands_on_projects.length; else noProjectsBlock" class="space-y-2">
+        <div
+          *ngFor="let project of selected.hands_on_projects"
+          class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700"
+        >
+          {{ project }}
+        </div>
+      </div>
+      <ng-template #noProjectsBlock>
+        <p class="text-sm text-gray-500">{{ 'candidates.view.noHandsOnProjects' | t }}</p>
+      </ng-template>
+    </div>
   </article>
 
   <article class="card p-5 space-y-4">

@@ -1,4 +1,4 @@
-import { Component, OnDestroy, OnInit } from '@angular/core';
+import { ChangeDetectorRef, Component, OnDestroy, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { finalize } from 'rxjs';
@@ -56,6 +56,7 @@ export class SkillsComponent implements OnInit, OnDestroy {
     private readonly api: SkillsApiService,
     private readonly preferences: UserPreferencesService,
     private readonly telemetry: UxTelemetryService,
+    private readonly cdr: ChangeDetectorRef,
   ) {
     this.form = this.fb.nonNullable.group({
       name: ['', [Validators.required, Validators.minLength(2)]],
@@ -85,7 +86,12 @@ export class SkillsComponent implements OnInit, OnDestroy {
       const payload: SkillCreatePayload = { name };
       this.api
         .create(payload)
-        .pipe(finalize(() => (this.saving = false)))
+        .pipe(
+          finalize(() => {
+            this.saving = false;
+            this.requestRender();
+          }),
+        )
         .subscribe({
           next: () => {
             this.resetForm();
@@ -112,7 +118,12 @@ export class SkillsComponent implements OnInit, OnDestroy {
     }
     this.api
       .update(editingId, payload)
-      .pipe(finalize(() => (this.saving = false)))
+      .pipe(
+        finalize(() => {
+          this.saving = false;
+          this.requestRender();
+        }),
+      )
       .subscribe({
         next: (updated) => {
           if (localIndex >= 0) {
@@ -168,7 +179,12 @@ export class SkillsComponent implements OnInit, OnDestroy {
     this.deleteTarget = null;
     this.api
       .delete(skill.id)
-      .pipe(finalize(() => (this.deletingId = null)))
+      .pipe(
+        finalize(() => {
+          this.deletingId = null;
+          this.requestRender();
+        }),
+      )
       .subscribe({
         next: () => {
           if (this.skills.length === 0 && this.currentPage > 1) {
@@ -309,18 +325,25 @@ export class SkillsComponent implements OnInit, OnDestroy {
         sort_by: this.sortKey,
         sort_dir: this.sortDirection,
       })
-      .pipe(finalize(() => (this.loading = false)))
+      .pipe(
+        finalize(() => {
+          this.loading = false;
+          this.requestRender();
+        }),
+      )
       .subscribe({
         next: (rows) => {
           this.skills = rows;
           this.hasPrev = this.currentPage > 1;
           this.hasNext = rows.length === this.pageSize;
+          this.requestRender();
         },
         error: (err) => {
           this.errorMessage = this.extractErrorMessage(err);
           this.skills = [];
           this.hasPrev = false;
           this.hasNext = false;
+          this.requestRender();
         },
       });
   }
@@ -338,5 +361,13 @@ export class SkillsComponent implements OnInit, OnDestroy {
       return detail;
     }
     return 'Request failed.';
+  }
+
+  private requestRender(): void {
+    try {
+      this.cdr.detectChanges();
+    } catch {
+      // ignore
+    }
   }
 }

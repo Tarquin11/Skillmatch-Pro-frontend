@@ -36,6 +36,8 @@ export interface CandidateExtractionChannels {
   sentence: string[];
   semantic_augment: string[];
   language: string[];
+  certification: string[];
+  hands_on_project: string[];
   project_text: string[];
 }
 
@@ -60,6 +62,8 @@ export interface CandidateUploadResponse {
   extracted_phone: string | null;
   predicted_title: string | null;
   predicted_experience_years: number | null;
+  certifications: string[];
+  hands_on_projects: string[];
 }
 
 export interface CandidateProfile {
@@ -71,6 +75,8 @@ export interface CandidateProfile {
   predicted_title: string | null;
   predicted_experience_years: number | null;
   skills: string[];
+  certifications: string[];
+  hands_on_projects: string[];
   uploaded_at: string | null;
 }
 
@@ -78,6 +84,8 @@ export interface CandidateUpdatePayload {
   full_name?: string;
   employee_number?: string;
   skills?: string[];
+  certifications?: string[];
+  hands_on_projects?: string[];
 }
 
 export interface CandidateListQuery {
