@@ -83,8 +83,8 @@ npm run e2e
 
 Environment variables:
 
-- `E2E_BASE_URL` (default: `http://127.0.0.1:4200`)
-- `E2E_API_URL` (default: `http://127.0.0.1:8000`)
+- `E2E_BASE_URL` (default: `https://127.0.0.1:4200`)
+- `E2E_API_URL` (default: `https://127.0.0.1:8000`)
 - `E2E_PASSWORD` (default: `SmokePass123!`)
 
 ## Additional Resources

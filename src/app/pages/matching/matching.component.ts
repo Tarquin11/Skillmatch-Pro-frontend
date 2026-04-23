@@ -318,6 +318,8 @@ export class MatchingComponent implements OnDestroy {
     switch (feature) {
       case 'skill_overlap':
         return 'matching.explain.feature.skill_overlap';
+      case 'missing_skill_ratio':
+        return 'matching.explain.feature.missing_skill_ratio';
       case 'experience_score':
         return 'matching.explain.feature.experience_score';
       case 'experience_surplus':
@@ -328,6 +330,12 @@ export class MatchingComponent implements OnDestroy {
         return 'matching.explain.feature.semantic_similarity';
       case 'performance_score':
         return 'matching.explain.feature.performance_score';
+      case 'engagement_score':
+        return 'matching.explain.feature.engagement_score';
+      case 'satisfaction_score':
+        return 'matching.explain.feature.satisfaction_score';
+      case 'hands_on_projects':
+        return 'matching.explain.feature.hands_on_projects';
       case 'currently_active':
         return 'matching.explain.feature.currently_active';
       default:
