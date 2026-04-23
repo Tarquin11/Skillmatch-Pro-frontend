@@ -1,6 +1,7 @@
 import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HttpErrorResponse, HttpEvent, HttpEventType } from '@angular/common/http';
+import { Router } from '@angular/router';
 import { finalize } from 'rxjs';
 import { TPipe } from '../../core/i18n/t.pipe';
 import {
@@ -48,6 +49,7 @@ export class CvUploadComponent implements OnDestroy {
     private readonly api: CandidatesApiService,
     private readonly telemetry: UxTelemetryService,
     private readonly cdr: ChangeDetectorRef,
+    private readonly router: Router,
   ) {}
 
   onFileChange(event: Event): void {
@@ -100,6 +102,11 @@ export class CvUploadComponent implements OnDestroy {
       file_size_kb: Math.round(this.lastAttemptedFile.size / 1024),
     });
     this.upload(this.lastAttemptedFile);
+  }
+
+  openReviewQueue(): void {
+    this.telemetry.track('cv_upload_open_review_queue_clicked');
+    this.router.navigate(['/admin/learning']);
   }
 
   ngOnDestroy(): void {
@@ -155,6 +162,11 @@ export class CvUploadComponent implements OnDestroy {
       return 'bg-amber-100 text-amber-900 border-amber-200';
     }
     return 'bg-slate-100 text-slate-700 border-slate-200';
+  }
+
+  queuedUnknownEntities(): string[] {
+    const queued = this.result?.queued_unknown_entities;
+    return Array.isArray(queued) ? queued : [];
   }
 
   private resolveConfidenceBand(item: CandidateSkillExtraction): 'low' | 'medium' | 'high' {

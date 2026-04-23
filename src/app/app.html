@@ -31,6 +31,7 @@
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/employees" routerLinkActive="active">{{ 'nav.employees' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/jobs" routerLinkActive="active">{{ 'nav.jobs' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/skills" routerLinkActive="active">{{ 'nav.skills' | t }}</a>
+      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/learning" routerLinkActive="active">{{ 'nav.learning' | t }}</a>
       <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/users" routerLinkActive="active">{{ 'nav.adminUsers' | t }}</a>
       <a *ngIf="!isAuthenticated()" routerLink="/login" routerLinkActive="active">{{ 'nav.login' | t }}</a>
       <button *ngIf="isAuthenticated()" class="logout-btn" type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>

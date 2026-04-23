@@ -39,6 +39,7 @@ export interface CandidateExtractionChannels {
   certification: string[];
   hands_on_project: string[];
   project_text: string[];
+  project_validated_skill?: string[];
 }
 
 export interface CandidateUploadResponse {
@@ -64,6 +65,8 @@ export interface CandidateUploadResponse {
   predicted_experience_years: number | null;
   certifications: string[];
   hands_on_projects: string[];
+  needs_review_count?: number;
+  queued_unknown_entities?: string[];
 }
 
 export interface CandidateProfile {

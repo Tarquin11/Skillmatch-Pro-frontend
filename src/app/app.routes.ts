@@ -12,6 +12,7 @@ import { CandidatesComponent } from './pages/candidates/candidates.component';
 import { EmployeesComponent } from './pages/employees/employees.component';
 import { JobsComponent } from './pages/jobs/jobs.component';
 import { SkillsComponent } from './pages/skills/skills.component';
+import { LearningQueueComponent } from './pages/learning-queue/learning-queue.component';
 
 export const routes: Routes = [
   { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
@@ -23,6 +24,7 @@ export const routes: Routes = [
   { path: 'admin/employees', component: EmployeesComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/jobs', component: JobsComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/skills', component: SkillsComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'admin/learning', component: LearningQueueComponent, canActivate: [authGuard, adminGuard] },
   { path: 'admin/users', component: AdminUsersComponent, canActivate: [authGuard, adminGuard] },
   { path: 'unauthorized', component: UnauthorizedComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'dashboard' },
