@@ -1,4 +1,4 @@
-import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { JobMatchRequest, MatchCandidate, MatchingApiService } from '../../core/services/matching-api.service';
@@ -73,7 +73,6 @@ export class MatchingComponent implements OnDestroy {
     private readonly api: MatchingApiService,
     private readonly preferences: UserPreferencesService,
     private readonly telemetry: UxTelemetryService,
-    private readonly cdr: ChangeDetectorRef,
   ) {
     this.form = this.fb.nonNullable.group({
       job_title: ['', Validators.required],
@@ -374,11 +373,6 @@ export class MatchingComponent implements OnDestroy {
           this.hasNext = Boolean(res.has_next ?? false);
           this.hasPrev = Boolean(res.has_prev ?? false);
           this.loading = false;
-          try {
-            this.cdr.detectChanges();
-          } catch {
-            // ignore
-          }
         },
         error: () => {
           this.errorKey = 'matching.error.request';

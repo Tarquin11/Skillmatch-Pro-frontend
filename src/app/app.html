@@ -4,38 +4,39 @@
 
   <header class="topbar">
     <h1>{{ 'app.title' | t }}</h1>
-    <nav aria-label="Main navigation">
-      <button
-        type="button"
-        class="lang-btn"
-        [class.active]="currentLanguage() === 'fr'"
-        (click)="setLanguage('fr')"
-        aria-label="Switch language to French"
-      >
-        FR
-      </button>
-      <button
-        type="button"
-        class="lang-btn"
-        [class.active]="currentLanguage() === 'en'"
-        (click)="setLanguage('en')"
-        aria-label="Switch language to English"
-      >
-        EN
-      </button>
-
-      <a *ngIf="isAuthenticated()" routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | t }}</a>
-      <a *ngIf="isAuthenticated()" routerLink="/matching" routerLinkActive="active">{{ 'nav.matching' | t }}</a>
-      <a *ngIf="isAuthenticated()" routerLink="/cv-upload" routerLinkActive="active">{{ 'nav.cvUpload' | t }}</a>
-      <a *ngIf="isAuthenticated()" routerLink="/candidates" routerLinkActive="active">{{ 'nav.candidates' | t }}</a>
-      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/employees" routerLinkActive="active">{{ 'nav.employees' | t }}</a>
-      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/jobs" routerLinkActive="active">{{ 'nav.jobs' | t }}</a>
-      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/skills" routerLinkActive="active">{{ 'nav.skills' | t }}</a>
-      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/learning" routerLinkActive="active">{{ 'nav.learning' | t }}</a>
-      <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/users" routerLinkActive="active">{{ 'nav.adminUsers' | t }}</a>
-      <a *ngIf="!isAuthenticated()" routerLink="/login" routerLinkActive="active">{{ 'nav.login' | t }}</a>
-      <button *ngIf="isAuthenticated()" class="logout-btn" type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>
-    </nav>
+    <div class="topbar-right">
+      <nav aria-label="Main navigation">
+        <a *ngIf="isAuthenticated()" routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | t }}</a>
+        <a *ngIf="isAuthenticated()" routerLink="/matching" routerLinkActive="active">{{ 'nav.matching' | t }}</a>
+        <a *ngIf="isAuthenticated()" routerLink="/cv-upload" routerLinkActive="active">{{ 'nav.cvUpload' | t }}</a>
+        <a *ngIf="isAuthenticated()" routerLink="/candidates" routerLinkActive="active">{{ 'nav.candidates' | t }}</a>
+        <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/employees" routerLinkActive="active">{{ 'nav.employees' | t }}</a>
+        <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/jobs" routerLinkActive="active">{{ 'nav.jobs' | t }}</a>
+        <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/skills" routerLinkActive="active">{{ 'nav.skills' | t }}</a>
+        <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/learning" routerLinkActive="active">{{ 'nav.learning' | t }}</a>
+        <a *ngIf="isAuthenticated() && isAdmin()" routerLink="/admin/users" routerLinkActive="active">{{ 'nav.adminUsers' | t }}</a>
+        <a *ngIf="!isAuthenticated()" routerLink="/login" routerLinkActive="active">{{ 'nav.login' | t }}</a>
+      </nav>
+      <div class="topbar-actions">
+        <button *ngIf="isAuthenticated()" class="logout-btn" type="button" (click)="logout()">{{ 'nav.logout' | t }}</button>
+        <div class="lang-switcher" role="group" aria-label="Language selection">
+          <button
+            type="button"
+            class="lang-btn"
+            [class.active]="currentLanguage() === 'fr'"
+            (click)="setLanguage('fr')"
+            aria-label="Switch language to French"
+          >FR</button>
+          <button
+            type="button"
+            class="lang-btn"
+            [class.active]="currentLanguage() === 'en'"
+            (click)="setLanguage('en')"
+            aria-label="Switch language to English"
+          >EN</button>
+        </div>
+      </div>
+    </div>
   </header>
 
   <main class="content" id="main-content" tabindex="-1">

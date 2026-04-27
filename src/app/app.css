@@ -25,7 +25,7 @@
 .topbar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 16px 24px;
   background: linear-gradient(135deg, #0d2a4a, #1a5d96);
   color: #ffffff;
@@ -36,20 +36,46 @@
   margin: 0;
   font-size: 20px;
   letter-spacing: 0.4px;
+  white-space: nowrap;
+  flex-shrink: 0;
+  padding-top: 6px;
+}
+
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .topbar nav {
   display: flex;
-  gap: 12px;
+  gap: 4px;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  align-items: center;
+}
+
+.topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.lang-switcher {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding-left: 8px;
+  border-left: 1px solid rgba(255, 255, 255, 0.25);
 }
 
 .topbar a {
   color: #eef4fb;
   text-decoration: none;
-  padding: 8px 10px;
+  padding: 6px 10px;
   border-radius: 8px;
+  white-space: nowrap;
 }
 
 .topbar a.active,
@@ -59,12 +85,14 @@
 }
 
 .logout-btn {
-  color: #e2e8f0;
+  color: #eef4fb;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .logout-btn:hover {
@@ -73,12 +101,14 @@
 }
 
 .lang-btn {
-  color: #e2e8f0;
+  color: #eef4fb;
   background: transparent;
   border: 1px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
   padding: 8px 10px;
   cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
 }
 
 .lang-btn.active,
@@ -177,7 +207,19 @@ textarea:focus-visible {
     gap: 12px;
   }
 
+  .topbar-right {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+
   .topbar nav {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .topbar-actions {
     width: 100%;
     justify-content: flex-start;
   }
