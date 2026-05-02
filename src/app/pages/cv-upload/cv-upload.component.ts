@@ -29,6 +29,7 @@ import { UxTelemetryService } from '../../core/services/ux-telemetry.service';
   templateUrl: './cv-upload.component.html',
 })
 export class CvUploadComponent implements OnDestroy {
+  private readonly resultCacheKey = 'sm_cv_upload_last_result_v1';
   readonly maxFileSizeMb = 10;
   readonly allowedExtensions = ['pdf', 'docx'];
   private readonly allowedMimeTypes = new Set([
@@ -50,7 +51,9 @@ export class CvUploadComponent implements OnDestroy {
     private readonly telemetry: UxTelemetryService,
     private readonly cdr: ChangeDetectorRef,
     private readonly router: Router,
-  ) {}
+  ) {
+    this.result = this.readCachedResult();
+  }
 
   onFileChange(event: Event): void {
     const target = event.target as HTMLInputElement | null;
@@ -59,6 +62,7 @@ export class CvUploadComponent implements OnDestroy {
     this.selectedFile = file;
     this.lastAttemptedFile = null;
     this.result = null;
+    this.clearCachedResult();
     this.uploadProgress = 0;
     this.requestErrorMessage = '';
     this.validationErrorKey = '';
@@ -184,6 +188,7 @@ export class CvUploadComponent implements OnDestroy {
     this.uploading = true;
     this.uploadProgress = 0;
     this.result = null;
+    this.clearCachedResult();
     this.requestErrorMessage = '';
     this.lastAttemptedFile = file;
 
@@ -202,6 +207,9 @@ export class CvUploadComponent implements OnDestroy {
           } else if (event.type === HttpEventType.Response) {
             this.uploadProgress = 100;
             this.result = event.body ?? null;
+            if (this.result) {
+              this.writeCachedResult(this.result);
+            }
             this.cdr.markForCheck();
           }
         },
@@ -255,5 +263,37 @@ export class CvUploadComponent implements OnDestroy {
   private fileExtension(name: string): string {
     const ext = name.split('.').pop()?.toLowerCase();
     return ext ?? '';
+  }
+
+  private readCachedResult(): CandidateUploadResponse | null {
+    try {
+      if (typeof sessionStorage === 'undefined') return null;
+      const raw = sessionStorage.getItem(this.resultCacheKey);
+      if (!raw) return null;
+      const parsed = JSON.parse(raw) as CandidateUploadResponse | null;
+      if (!parsed || typeof parsed !== 'object') return null;
+      if (typeof parsed.filename !== 'string' || !Array.isArray(parsed.skills)) return null;
+      return parsed;
+    } catch {
+      return null;
+    }
+  }
+
+  private writeCachedResult(result: CandidateUploadResponse): void {
+    try {
+      if (typeof sessionStorage === 'undefined') return;
+      sessionStorage.setItem(this.resultCacheKey, JSON.stringify(result));
+    } catch {
+      // Ignore cache failures: the upload result is still shown in memory.
+    }
+  }
+
+  private clearCachedResult(): void {
+    try {
+      if (typeof sessionStorage === 'undefined') return;
+      sessionStorage.removeItem(this.resultCacheKey);
+    } catch {
+      // Ignore cache failures.
+    }
   }
 }
