@@ -76,10 +76,6 @@ The main top navigation bar exposes the following pages:
 
 ![Users page](docs/screenshots/users.png)
 
-### Language switcher (FR / EN)
-
-![Language toggle](docs/screenshots/lang-switcher.png)
-
 ## Architecture
 
 ```
