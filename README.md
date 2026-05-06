@@ -33,9 +33,6 @@ The main top navigation bar exposes the following pages:
 
 ## Screenshots
 
-> Place each PNG in `docs/screenshots/` and the markdown links below will render them.
-> If you don't have a screenshot yet, leave the placeholder so the section structure stays defendable.
-
 ### Login
 
 ![Login screen](docs/screenshots/login.png)
