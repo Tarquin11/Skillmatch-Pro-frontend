@@ -1,8 +1,74 @@
 <section class="space-y-6">
   <app-page-header
-    titleKey="dashboard.title"
-    subtitleKey="dashboard.subtitle"
+    [titleKey]="titleKey()"
+    [subtitleKey]="subtitleKey()"
   ></app-page-header>
+
+  <div class="grid grid-cols-1 xl:grid-cols-[1.15fr_0.85fr] gap-4">
+    <article
+      *ngIf="canSeeModelHealth()"
+      class="card card-level-1 p-5 border"
+      [ngClass]="healthClass()"
+    >
+      <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+          <p class="text-xs font-semibold uppercase">{{ 'dashboard.health.label' | t }}</p>
+          <h3 class="mt-1 text-xl font-semibold">{{ healthTitleKey() | t }}</h3>
+          <p class="mt-1 text-sm opacity-90">{{ healthSubtitleKey() | t }}</p>
+        </div>
+        <span class="inline-flex w-fit rounded-full border border-current/20 bg-white/70 px-4 py-2 text-sm font-semibold">
+          {{ formatTimestamp(updatedAt()) || ('dashboard.notAvailable' | t) }}
+        </span>
+      </div>
+    </article>
+
+    <article class="card card-level-1 p-5" [ngClass]="canSeeModelHealth() ? '' : 'xl:col-span-2'">
+      <h3 class="font-semibold">{{ 'dashboard.quickActions.title' | t }}</h3>
+      <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <a
+          *ngFor="let action of quickActions()"
+          [routerLink]="action.route"
+          class="rounded-lg border p-4 text-sm transition hover:-translate-y-0.5 hover:shadow-md"
+          [ngClass]="action.primary ? 'border-primary-300 bg-primary-50 text-primary-900' : 'border-gray-200 bg-white text-gray-800'"
+        >
+          <span class="block font-semibold">{{ action.labelKey | t }}</span>
+          <span class="mt-1 block text-xs text-gray-600">{{ action.descriptionKey | t }}</span>
+        </a>
+      </div>
+    </article>
+  </div>
+
+  <div
+    class="grid grid-cols-1 md:grid-cols-2 gap-4"
+    [ngClass]="isAdmin() && canSeeModelHealth() ? 'xl:grid-cols-5' : 'xl:grid-cols-4'"
+  >
+    <article class="card card-level-1 p-4">
+      <p class="text-xs text-contrast-muted">{{ 'dashboard.summary.role' | t }}</p>
+      <p class="mt-1 text-lg font-semibold">{{ roleLabelKey() | t }}</p>
+    </article>
+
+    <article class="card card-level-1 p-4">
+      <p class="text-xs text-contrast-muted">{{ 'dashboard.summary.jobs' | t }}</p>
+      <p class="mt-1 text-lg font-semibold">{{ jobsCount() === null ? ('common.na' | t) : jobsCount() }}</p>
+    </article>
+
+    <article *ngIf="isAdmin()" class="card card-level-1 p-4">
+      <p class="text-xs text-contrast-muted">{{ 'dashboard.summary.candidates' | t }}</p>
+      <p class="mt-1 text-lg font-semibold">{{ candidatesCount() === null ? ('common.na' | t) : candidatesCount() }}</p>
+    </article>
+
+    <article class="card card-level-1 p-4">
+      <p class="text-xs text-contrast-muted">{{ 'dashboard.summary.updated' | t }}</p>
+      <p class="mt-1 text-sm font-semibold">{{ formatTimestamp(updatedAt()) || ('dashboard.notAvailable' | t) }}</p>
+    </article>
+
+    <article *ngIf="canSeeModelHealth() && info() as info" class="card card-level-1 p-4">
+      <p class="text-xs text-contrast-muted">{{ 'dashboard.summary.matchingReady' | t }}</p>
+      <p class="mt-1 text-lg font-semibold">
+        {{ statusLabelKey(info.model_loaded && info.artifact_exists, 'dashboard.status.ready', 'dashboard.status.notReady') | t }}
+      </p>
+    </article>
+  </div>
 
   <div *ngIf="loading()" class="space-y-4" aria-live="polite">
     <span class="sr-only">{{ 'dashboard.loading' | t }}</span>
@@ -12,38 +78,46 @@
         <div class="h-6 w-28 rounded bg-slate-200 animate-pulse"></div>
       </div>
     </div>
-    <div *ngFor="let i of [1,2,3]" class="card card-level-1 p-5 space-y-3">
-      <div class="h-4 w-36 rounded bg-slate-200 animate-pulse"></div>
-      <div class="h-4 rounded bg-slate-200 animate-pulse"></div>
-      <div class="h-4 rounded bg-slate-200 animate-pulse"></div>
-      <div class="h-4 w-3/4 rounded bg-slate-200 animate-pulse"></div>
-    </div>
   </div>
+
   <app-empty-state *ngIf="errorKey()" [titleKey]="errorKey()"></app-empty-state>
 
-  <ng-container *ngIf="info() as info">
+  <ng-container *ngIf="isAdmin() && info() as info">
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       <article class="card card-level-1 p-4">
         <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.modelLoaded' | t }}</p>
-        <p class="text-lg font-semibold mt-1">{{ (info.model_loaded ? 'common.yes' : 'common.no') | t }}</p>
+        <span class="mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold" [ngClass]="statusBadgeClass(info.model_loaded)">
+          {{ statusLabelKey(info.model_loaded, 'dashboard.status.online', 'dashboard.status.offline') | t }}
+        </span>
       </article>
       <article class="card card-level-1 p-4">
         <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.artifact' | t }}</p>
-        <p class="text-lg font-semibold mt-1">{{ (info.artifact_exists ? 'common.yes' : 'common.no') | t }}</p>
+        <span class="mt-2 inline-flex rounded-full border px-3 py-1 text-sm font-semibold" [ngClass]="statusBadgeClass(info.artifact_exists)">
+          {{ statusLabelKey(info.artifact_exists, 'dashboard.status.available', 'dashboard.status.missing') | t }}
+        </span>
       </article>
       <article class="card card-level-1 p-4">
         <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.runtime' | t }}</p>
-        <p class="text-lg font-semibold mt-1">{{ info.runtime_source }}</p>
+        <p class="mt-2 text-lg font-semibold capitalize">{{ info.runtime_source }}</p>
       </article>
       <article class="card card-level-1 p-4">
         <p class="text-xs text-contrast-muted">{{ 'dashboard.kpi.lastEval' | t }}</p>
-        <p class="text-sm font-semibold mt-1">{{ formatTimestamp(info.last_generalization_eval_at_utc) }}</p>
+        <p class="mt-2 text-sm font-semibold">{{ formatTimestamp(info.last_generalization_eval_at_utc) || ('dashboard.notAvailable' | t) }}</p>
       </article>
     </div>
 
     <article class="card card-level-2 p-5">
-      <h3 class="font-semibold mb-3">{{ 'dashboard.gates.title' | t }}</h3>
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
+        <div>
+          <h3 class="font-semibold">{{ 'dashboard.gates.title' | t }}</h3>
+          <p class="mt-1 text-sm text-gray-600">{{ 'dashboard.gates.subtitle' | t }}</p>
+        </div>
+        <span class="text-xs text-gray-500">
+          {{ 'dashboard.evaluation.promotionChecked' | t }}:
+          {{ formatTimestamp(info.promotion_gate_checked_at_utc) || ('dashboard.notAvailable' | t) }}
+        </span>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
         <span class="inline-flex items-center gap-2 px-3 py-1 rounded-full border text-xs font-medium" [ngClass]="statusBadgeClass(info.promotion_gate_passed)">
           {{ 'dashboard.gates.overall' | t }}: {{ statusTextKey(info.promotion_gate_passed) | t }}
         </span>
@@ -60,49 +134,70 @@
           {{ 'dashboard.gates.robustness' | t }}: {{ statusTextKey(info.robustness_gate_passed) | t }}
         </span>
       </div>
+      <p class="mt-3 text-xs text-gray-500">{{ 'dashboard.gates.hint' | t }}</p>
     </article>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
       <article class="card card-level-1 p-5">
         <h3 class="font-semibold mb-3">{{ 'dashboard.metadata' | t }}</h3>
-        <p><strong>{{ 'dashboard.dataset_version' | t }}:</strong> {{ info.dataset_version || ('common.na' | t) }}</p>
-        <p><strong>{{ 'dashboard.trained_at' | t }}:</strong> {{ formatTimestamp(info.trained_at_utc) }}</p>
-        <p><strong>{{ 'dashboard.canary' | t }}:</strong> {{ (info.canary_enabled ? 'dashboard.enabled' : 'dashboard.disabled') | t }}</p>
-        <p><strong>{{ 'dashboard.canary_traffic' | t }}:</strong> {{ info.canary_traffic_percent ?? 0 }}%</p>
-        <p><strong>{{ 'dashboard.source' | t }}:</strong> {{ info.runtime_source }}</p>
+        <dl class="grid gap-2 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.dataset_version' | t }}</dt>
+            <dd class="text-right">{{ datasetVersion(info) || ('dashboard.notConfigured' | t) }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.trained_at' | t }}</dt>
+            <dd class="text-right">{{ formatTimestamp(info.trained_at_utc) || ('dashboard.notAvailable' | t) }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.canary' | t }}</dt>
+            <dd class="text-right">{{ (info.canary_enabled ? 'dashboard.enabled' : 'dashboard.disabled') | t }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.canary_traffic' | t }}</dt>
+            <dd class="text-right">{{ info.canary_traffic_percent ?? 0 }}%</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.source' | t }}</dt>
+            <dd class="text-right">{{ info.runtime_source }}</dd>
+          </div>
+        </dl>
       </article>
 
       <article class="card card-level-2 p-5">
         <h3 class="font-semibold mb-3">{{ 'dashboard.evaluation.title' | t }}</h3>
-        <p><strong>{{ 'dashboard.evaluation.promotionChecked' | t }}:</strong> {{ formatTimestamp(info.promotion_gate_checked_at_utc) }}</p>
-        <p><strong>{{ 'dashboard.evaluation.generalizationEval' | t }}:</strong> {{ formatTimestamp(info.last_generalization_eval_at_utc) }}</p>
-        <p><strong>{{ 'dashboard.evaluation.scheduledEval' | t }}:</strong> {{ formatTimestamp(info.last_generalization_scheduled_eval_at_utc) }}</p>
-        <p><strong>{{ 'dashboard.evaluation.generalizationGate' | t }}:</strong> {{ formatTimestamp(info.last_generalization_gate_checked_at_utc) }}</p>
+        <dl class="grid gap-2 text-sm">
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.evaluation.generalizationEval' | t }}</dt>
+            <dd class="text-right">{{ formatTimestamp(info.last_generalization_eval_at_utc) || ('dashboard.notAvailable' | t) }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.evaluation.scheduledEval' | t }}</dt>
+            <dd class="text-right">{{ formatTimestamp(info.last_generalization_scheduled_eval_at_utc) || ('dashboard.notAvailable' | t) }}</dd>
+          </div>
+          <div class="flex justify-between gap-4">
+            <dt class="font-semibold">{{ 'dashboard.evaluation.generalizationGate' | t }}</dt>
+            <dd class="text-right">{{ formatTimestamp(info.last_generalization_gate_checked_at_utc) || ('dashboard.notAvailable' | t) }}</dd>
+          </div>
+        </dl>
       </article>
     </div>
 
     <article class="card card-level-3 p-5">
-      <h3 class="font-semibold mb-3">{{ 'dashboard.metrics.title' | t }}</h3>
-      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 text-sm">
-        <div>
-          <p class="text-xs text-gray-500">ROC-AUC</p>
-          <p class="font-semibold">{{ metricValue('roc_auc') }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500">F1</p>
-          <p class="font-semibold">{{ metricValue('f1') }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500">MAP@K</p>
-          <p class="font-semibold">{{ metricValue('map_at_k') }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500">Precision@K</p>
-          <p class="font-semibold">{{ metricValue('precision_at_k') }}</p>
-        </div>
-        <div>
-          <p class="text-xs text-gray-500">Recall@K</p>
-          <p class="font-semibold">{{ metricValue('recall_at_k') }}</p>
+      <h3 class="font-semibold mb-4">{{ 'dashboard.metrics.title' | t }}</h3>
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 text-sm">
+        <div *ngFor="let metric of metrics" class="rounded-lg border border-blue-100 bg-white/80 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-xs text-gray-500">{{ metric.label }}</p>
+            <p class="font-semibold">{{ metricValue(metric.key) }}</p>
+          </div>
+          <div class="mt-3 h-2 rounded-full bg-slate-200">
+            <div
+              class="h-2 rounded-full"
+              [ngClass]="metricBarClass(metric.key)"
+              [style.width.%]="metricPercent(metric.key)"
+            ></div>
+          </div>
         </div>
       </div>
     </article>
