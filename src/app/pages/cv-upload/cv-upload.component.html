@@ -62,12 +62,17 @@
   </article>
 
   <article *ngIf="result" class="card p-6 space-y-4">
+    <div *ngIf="isDismissed" class="rounded-lg border border-amber-300 bg-amber-50 p-4 text-amber-900" role="alert">
+      <h3 class="font-semibold mb-1">{{ 'cvUpload.dismissed.title' | t }}</h3>
+      <p class="text-sm">{{ 'cvUpload.dismissed.message' | t }}</p>
+    </div>
+
     <div class="flex flex-wrap items-center gap-2">
       <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
-        [ngClass]="result.ok ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200'">
-        {{ result.ok ? ('cvUpload.status.ok' | t) : ('cvUpload.status.failed' | t) }}
+        [ngClass]="isDismissed ? 'bg-amber-100 text-amber-800 border-amber-200' : (result.ok ? 'bg-green-100 text-green-800 border-green-200' : 'bg-red-100 text-red-800 border-red-200')">
+        {{ isDismissed ? ('cvUpload.status.dismissed' | t) : (result.ok ? ('cvUpload.status.ok' | t) : ('cvUpload.status.failed' | t)) }}
       </span>
-      <span class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
+      <span *ngIf="!isDismissed" class="inline-flex items-center rounded-full border px-3 py-1 text-xs font-semibold"
         [ngClass]="result.degraded ? 'bg-amber-100 text-amber-800 border-amber-200' : 'bg-slate-100 text-slate-700 border-slate-200'">
         {{ result.degraded ? ('cvUpload.status.degraded' | t) : ('cvUpload.status.full' | t) }}
       </span>
@@ -78,7 +83,7 @@
       <p><strong>{{ 'cvUpload.result.textLength' | t }}:</strong> {{ result.text_length }}</p>
       <p><strong>{{ 'cvUpload.result.predictedTitle' | t }}:</strong> {{ result.predicted_title || ('common.na' | t) }}</p>
       <p><strong>{{ 'cvUpload.result.predictedExperience' | t }}:</strong> {{ result.predicted_experience_years ?? ('common.na' | t) }}</p>
-      <p class="text-xs text-gray-500">{{ 'cvUpload.result.savedHint' | t }}</p>
+      <p *ngIf="!isDismissed" class="text-xs text-gray-500">{{ 'cvUpload.result.savedHint' | t }}</p>
     </div>
 
     <div class="rounded-lg border border-gray-200 bg-gray-50 p-4">

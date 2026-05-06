@@ -46,6 +46,10 @@ export class CvUploadComponent implements OnDestroy {
   requestErrorMessage = '';
   result: CandidateUploadResponse | null = null;
 
+  get isDismissed(): boolean {
+    return !!this.result?.warnings?.includes('cv_dismissed_empty_extraction');
+  }
+
   constructor(
     private readonly api: CandidatesApiService,
     private readonly telemetry: UxTelemetryService,
