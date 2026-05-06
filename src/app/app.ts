@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Observable } from 'rxjs';
 import { AuthApiService, UserRole } from './core/services/auth-api.service';
 import { TPipe } from './core/i18n/t.pipe';
@@ -21,6 +21,7 @@ export class App implements OnInit {
   constructor(
     private readonly auth: AuthApiService,
     private readonly i18n: I18nService,
+    private readonly router: Router,
   ) {
     this.authLoading$ = this.auth.authLoading$;
   }
@@ -55,6 +56,7 @@ export class App implements OnInit {
 
   logout(): void {
     this.auth.logout();
+    void this.router.navigateByUrl('/login');
   }
 
   currentLanguage(): LanguageCode {

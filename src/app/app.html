@@ -3,7 +3,12 @@
   <app-toast-container></app-toast-container>
 
   <header class="topbar">
-    <h1>{{ 'app.title' | t }}</h1>
+    <a class="brand-link" routerLink="/dashboard" [attr.aria-label]="'app.title' | t">
+      <span class="brand-mark">
+        <img src="skillmatch-pro-mark.png" alt="" width="40" height="40" />
+      </span>
+      <span class="brand-text">{{ 'app.title' | t }}</span>
+    </a>
     <div class="topbar-right">
       <nav aria-label="Main navigation">
         <a *ngIf="isAuthenticated()" routerLink="/dashboard" routerLinkActive="active">{{ 'nav.dashboard' | t }}</a>
