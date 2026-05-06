@@ -83,6 +83,18 @@
         },
         "serve": {
           "builder": "@angular/build:dev-server",
+          "options": {
+            "host": "0.0.0.0",
+            "port": 4200,
+            "ssl": true,
+            "sslCert": "skillmatchpro.pem",
+            "sslKey": "skillmatchpro-key.pem",
+            "allowedHosts": [
+              "skillmatchpro",
+              "localhost",
+              "127.0.0.1"
+            ]
+          },
           "configurations": {
             "production": {
               "buildTarget": "skillmatch-pro-front:build:production"
