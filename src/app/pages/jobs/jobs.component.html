@@ -4,7 +4,7 @@
     subtitleKey="jobs.subtitle"
   ></app-page-header>
 
-  <form [formGroup]="form" (ngSubmit)="submit()" class="card p-6 space-y-4">
+  <form *ngIf="canManageJobs" [formGroup]="form" (ngSubmit)="submit()" class="card p-6 space-y-4">
     <h3 class="font-semibold">{{ isEditMode ? ('jobs.form.edit' | t) : ('jobs.form.create' | t) }}</h3>
 
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -48,7 +48,7 @@
     [loading]="loading"
     [hasRows]="jobs.length > 0"
     [skeletonRows]="6"
-    [skeletonCols]="5"
+    [skeletonCols]="canManageJobs ? 5 : 4"
     loadingKey="jobs.loading"
     emptyTitleKey="jobs.empty"
   >
@@ -116,7 +116,7 @@
           <p><span class="text-gray-500">{{ 'jobs.table.title' | t }}:</span> {{ job.title || ('common.na' | t) }}</p>
           <p><span class="text-gray-500">{{ 'jobs.table.description' | t }}:</span> {{ job.description || ('common.na' | t) }}</p>
         </div>
-        <div class="mt-4 grid grid-cols-2 gap-2">
+        <div *ngIf="canManageJobs" class="mt-4 grid grid-cols-2 gap-2">
           <button type="button" class="btn-secondary w-full min-h-11" (click)="startEdit(job)">{{ 'jobs.table.edit' | t }}</button>
           <button type="button" class="btn-secondary w-full min-h-11" [disabled]="deletingId === job.id" (click)="requestDeleteJob(job)">
             {{ deletingId === job.id ? ('common.loading' | t) : ('jobs.table.delete' | t) }}
@@ -143,7 +143,7 @@
               </button>
             </th>
             <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'jobs.table.description' | t }}</th>
-            <th class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'jobs.table.actions' | t }}</th>
+            <th *ngIf="canManageJobs" class="sticky top-0 z-10 text-left px-4 py-3" scope="col">{{ 'jobs.table.actions' | t }}</th>
           </tr>
         </thead>
         <tbody>
@@ -152,7 +152,7 @@
             <td class="px-4 py-3">{{ job.title || ('common.na' | t) }}</td>
             <td class="px-4 py-3">{{ job.department || ('common.na' | t) }}</td>
             <td class="px-4 py-3 max-w-[420px] truncate">{{ job.description || ('common.na' | t) }}</td>
-            <td class="px-4 py-3 space-x-2">
+            <td *ngIf="canManageJobs" class="px-4 py-3 space-x-2">
               <button type="button" class="btn-secondary" (click)="startEdit(job)">{{ 'jobs.table.edit' | t }}</button>
               <button type="button" class="btn-secondary" [disabled]="deletingId === job.id" (click)="requestDeleteJob(job)">
                 {{ deletingId === job.id ? ('common.loading' | t) : ('jobs.table.delete' | t) }}
@@ -173,6 +173,7 @@
   </app-data-table>
 
   <app-confirm-dialog
+    *ngIf="canManageJobs"
     [open]="!!deleteTarget"
     titleKey="ui.confirmDelete.title"
     messageKey="ui.confirmDelete.jobMessage"

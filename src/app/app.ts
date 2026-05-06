@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { Observable } from 'rxjs';
-import { AuthApiService } from './core/services/auth-api.service';
+import { AuthApiService, UserRole } from './core/services/auth-api.service';
 import { TPipe } from './core/i18n/t.pipe';
 import { I18nService } from './core/i18n/i18n.service';
 import { LanguageCode } from './core/i18n/translations';
@@ -34,7 +34,23 @@ export class App implements OnInit {
   }
 
   isAdmin(): boolean {
-    return this.auth.isAdmin();
+    return this.hasAnyRole(['admin']);
+  }
+
+  canAccessMatching(): boolean {
+    return this.hasAnyRole(['admin', 'recruiter']);
+  }
+
+  canAccessCvUpload(): boolean {
+    return this.hasAnyRole(['admin', 'recruiter']);
+  }
+
+  canAccessCandidates(): boolean {
+    return this.hasAnyRole(['admin']);
+  }
+
+  canAccessJobs(): boolean {
+    return this.hasAnyRole(['admin', 'recruiter', 'user']);
   }
 
   logout(): void {
@@ -47,5 +63,10 @@ export class App implements OnInit {
 
   setLanguage(lang: LanguageCode): void {
     this.i18n.setLanguage(lang);
+  }
+
+  private hasAnyRole(roles: UserRole[]): boolean {
+    const currentRole = this.auth.getCurrentUserSnapshot()?.role;
+    return currentRole ? roles.includes(currentRole) : false;
   }
 }

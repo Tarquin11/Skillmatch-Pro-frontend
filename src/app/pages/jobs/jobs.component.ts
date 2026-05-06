@@ -10,6 +10,7 @@ import { FormFieldComponent } from '../../core/components/ui/form-field/form-fie
 import { ConfirmDialogComponent } from '../../core/components/ui/confirm-dialog/confirm-dialog.component';
 import { UserPreferencesService } from '../../core/services/user-preferences.service';
 import { UxTelemetryService } from '../../core/services/ux-telemetry.service';
+import { AuthApiService } from '../../core/services/auth-api.service';
 
 type JobSortKey = 'id' | 'title' | 'department';
 type SortDirection = 'asc' | 'desc';
@@ -35,6 +36,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   deletingId: number | null = null;
   errorMessage = '';
   jobs: Job[] = [];
+  canManageJobs = false;
 
   currentPage = 1;
   pageSize = 10;
@@ -55,6 +57,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   constructor(
     private readonly fb: FormBuilder,
     private readonly api: JobsApiService,
+    private readonly auth: AuthApiService,
     private readonly preferences: UserPreferencesService,
     private readonly telemetry: UxTelemetryService,
     private readonly cdr: ChangeDetectorRef,
@@ -67,6 +70,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    this.canManageJobs = this.auth.getCurrentUserSnapshot()?.role === 'admin';
     this.restorePreferences();
     this.loadJobs();
   }
@@ -76,6 +80,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   submit(): void {
+    if (!this.canManageJobs) {
+      return;
+    }
     if (this.form.invalid || this.saving) {
       this.form.markAllAsTouched();
       return;
@@ -155,6 +162,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   startEdit(job: Job): void {
+    if (!this.canManageJobs) {
+      return;
+    }
     this.editingId = job.id;
     this.errorMessage = '';
     this.successKey = '';
@@ -170,6 +180,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   requestDeleteJob(job: Job): void {
+    if (!this.canManageJobs) {
+      return;
+    }
     if (!job.id || this.deletingId !== null) return;
     this.deleteTarget = job;
   }
@@ -179,6 +192,9 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   confirmDeleteJob(): void {
+    if (!this.canManageJobs) {
+      return;
+    }
     const job = this.deleteTarget;
     if (!job?.id || this.deletingId !== null) return;
 
@@ -240,7 +256,7 @@ export class JobsComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
-    if (this.form.dirty) {
+    if (this.canManageJobs && this.form.dirty) {
       this.telemetry.track('jobs_form_abandoned', {
         is_edit_mode: this.isEditMode,
         touched_fields: Object.entries(this.form.controls)
