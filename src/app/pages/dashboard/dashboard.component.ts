@@ -1,4 +1,4 @@
-import { Component, OnInit, signal } from '@angular/core';
+import { Component, OnDestroy, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { MatchingApiService, ModelInfoResponse } from '../../core/services/matching-api.service';
@@ -31,7 +31,7 @@ interface DashboardMetric {
   imports: [CommonModule, RouterLink, TPipe, PageHeaderComponent, EmptyStateComponent],
   templateUrl: './dashboard.component.html',
 })
-export class DashboardComponent implements OnInit {
+export class DashboardComponent implements OnInit, OnDestroy {
   readonly loading = signal(true);
   readonly errorKey = signal('');
   readonly info = signal<ModelInfoResponse | null>(null);
@@ -39,6 +39,9 @@ export class DashboardComponent implements OnInit {
   readonly jobsCount = signal<number | null>(null);
   readonly candidatesCount = signal<number | null>(null);
   readonly updatedAt = signal<string>('');
+  /** Live wall-clock signal, refreshed every second. */
+  readonly now = signal<Date>(new Date());
+  private clockHandle: ReturnType<typeof setInterval> | null = null;
 
   readonly metrics: DashboardMetric[] = [
     { key: 'roc_auc', label: 'ROC-AUC' },
@@ -59,6 +62,9 @@ export class DashboardComponent implements OnInit {
     const role = this.auth.getCurrentUserSnapshot()?.role ?? 'unknown';
     this.currentRole.set(role);
     this.updatedAt.set(new Date().toISOString());
+    // Start the live clock — updates the badge every second so the user sees
+    // time advancing without having to refresh the page.
+    this.clockHandle = setInterval(() => this.now.set(new Date()), 1000);
     this.loadJobsCount();
     if (role === 'admin') {
       this.loadCandidatesCount();
@@ -68,6 +74,13 @@ export class DashboardComponent implements OnInit {
       return;
     }
     this.loading.set(false);
+  }
+
+  ngOnDestroy(): void {
+    if (this.clockHandle !== null) {
+      clearInterval(this.clockHandle);
+      this.clockHandle = null;
+    }
   }
 
   titleKey(): string {

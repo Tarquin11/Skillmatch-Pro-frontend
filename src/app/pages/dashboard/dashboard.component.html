@@ -16,8 +16,8 @@
           <h3 class="mt-1 text-xl font-semibold">{{ healthTitleKey() | t }}</h3>
           <p class="mt-1 text-sm opacity-90">{{ healthSubtitleKey() | t }}</p>
         </div>
-        <span class="inline-flex w-fit rounded-full border border-current/20 bg-white/70 px-4 py-2 text-sm font-semibold">
-          {{ formatTimestamp(updatedAt()) || ('dashboard.notAvailable' | t) }}
+        <span class="inline-flex w-fit rounded-full border border-current/20 bg-white/70 px-4 py-2 text-sm font-semibold tabular-nums">
+          {{ now() | date:'medium' }}
         </span>
       </div>
     </article>
